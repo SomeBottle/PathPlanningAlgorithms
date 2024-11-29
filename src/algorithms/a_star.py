@@ -87,20 +87,20 @@ class AStarAlgorithm(AlgorithmBase):
             end_node = end_node.parent
         self._solution_path.reverse()
 
-    def next_step(self) -> bool:
-        """
-        执行算法的下一步
-
-        :return: 本步是否能执行
-        """
+    def has_next_step(self) -> bool:
         if len(self._open_list) == 0:
             # 开放列表中已经空了
             self._state = AlgorithmState.ENDED
 
-        if self._state == AlgorithmState.INITIALIZED:
-            self._state = AlgorithmState.RUNNING
-        elif self._state in (AlgorithmState.SOLVED, AlgorithmState.ENDED):
+        if self._state in (AlgorithmState.SOLVED, AlgorithmState.ENDED):
             # 算法已经结束就不能继续了
+            return False
+
+        return True
+
+    def next_step(self) -> bool:
+        if not self.has_next_step():
+            # 没有下一步了
             return False
 
         # 取得到起点和终点距离之和最小的结点
@@ -155,11 +155,8 @@ class AStarAlgorithm(AlgorithmBase):
         return True
 
     def solve(self):
-        """
-        直接解出结果
-        """
-        while self.next_step():
-            pass
+        while self.has_next_step():
+            self.next_step()
 
     @property
     def solved_path_coordinates(self) -> list[tuple[int, int]]:
