@@ -22,6 +22,107 @@ class Problem:
         self._start = start
         # 终点
         self._end = end
+        # 长度和宽度
+        self._w = len(res_map[0])
+        self._h = len(res_map)
+
+    @property
+    def bin_map(self) -> list[list]:
+        """
+        返回二进制矩阵，0 - 空或者走过，1 - 阻塞
+
+        :return: 二进制矩阵
+        """
+        b_map = [[0] * len(self._map[0]) for _ in range(len(self._map))]
+        for i in range(len(self._map)):
+            for j in range(len(self._map[0])):
+                if self._map[i][j] == CellStatus.BLOCKED:
+                    b_map[i][j] = 1
+        return b_map
+
+    @property
+    def numeric_map(self) -> list[list]:
+        """
+        返回以数字进行标记的地图矩阵
+
+        :return: 地图矩阵，0 为空，1 为阻塞，2 为走过，3 为起点，4 为终点
+        """
+        n_map = [[0] * len(self._map[0]) for _ in range(len(self._map))]
+        for i in range(len(self._map)):
+            for j in range(len(self._map[0])):
+                if (i, j) == self._start:
+                    n_map[i][j] = 3
+                elif (i, j) == self._end:
+                    n_map[i][j] = 4
+                elif self._map[i][j] == CellStatus.BLOCKED:
+                    n_map[i][j] = 1
+                elif self._map[i][j] == CellStatus.WALKED:
+                    n_map[i][j] = 2
+        return n_map
+
+    @property
+    def start(self) -> tuple[int, int]:
+        """
+        起点
+
+        :return: 起点 (i,j)
+        """
+        return self._start
+
+    @property
+    def end(self) -> tuple[int, int]:
+        """
+        终点
+
+        :return: 终点 (i,j)
+        """
+        return self._end
+
+    @property
+    def width(self) -> int:
+        """
+        地图宽度
+
+        :return: 地图宽度
+        """
+        return self._w
+
+    @property
+    def height(self) -> int:
+        """
+        地图高度
+
+        :return: 地图高度
+        """
+        return self._h
+
+    def dist_to_end(self, i, j) -> float:
+        """
+        计算 (i,j) 到终点的预估距离
+
+        :return: 距离
+        :note: 实现为欧几里得距离（L2）
+        """
+        return ((i - self._end[0]) ** 2 + (j - self._end[1]) ** 2) ** 0.5
+
+    def in_bounds(self, i, j) -> bool:
+        """
+        检查 (i,j) 是否在边界内
+
+        :return: 是否在边界内
+        """
+        return 0 <= i < self._h and 0 <= j < self._w
+
+    def is_blocked(self, i, j) -> bool:
+        """
+        检查 (i,j) 这个地方是否有障碍物
+
+        :return: 是否有障碍物
+        :note: 如果 (i,j) 越出边界，会直接返回 True
+        """
+        if not self.in_bounds(i, j):
+            return True
+        return self._map[i][j] == CellStatus.BLOCKED
 
     def __str__(self):
         res_str = ""

@@ -3,5 +3,6 @@
 """
 
 from .generator import generate_problem
+from .problem import Problem
 
-__all__ = ["generate_problem"]
+__all__ = ["generate_problem", "Problem"]
