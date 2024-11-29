@@ -40,11 +40,11 @@ class Problem:
                     b_map[i][j] = 1
         return b_map
 
-    @property
-    def numeric_map(self) -> list[list]:
+    def get_numeric_map(self, include_walked=True) -> list[list]:
         """
         返回以数字进行标记的地图矩阵
 
+        :param include_walked: 是否包含走过的路径，如果不包含的话，走过的地方也会被标记为空 (0)
         :return: 地图矩阵，0 为空，1 为阻塞，2 为走过，3 为起点，4 为终点
         """
         n_map = [[0] * len(self._map[0]) for _ in range(len(self._map))]
@@ -56,9 +56,18 @@ class Problem:
                     n_map[i][j] = 4
                 elif self._map[i][j] == CellStatus.BLOCKED:
                     n_map[i][j] = 1
-                elif self._map[i][j] == CellStatus.WALKED:
+                elif self._map[i][j] == CellStatus.WALKED and include_walked:
                     n_map[i][j] = 2
         return n_map
+
+    @property
+    def numeric_map(self):
+        """
+        (alias) 返回以数字进行标记的地图矩阵，包含走过的路径
+
+        :return: 地图矩阵，0 为空，1 为阻塞，2 为走过，3 为起点，4 为终点
+        """
+        return self.get_numeric_map()
 
     @property
     def start(self) -> tuple[int, int]:
