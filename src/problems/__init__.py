@@ -11,4 +11,5 @@ __all__ = [
     "Problem",
     "generate_partial_ring_problem",
     "draw_problem",
+    "CellStatus",
 ]

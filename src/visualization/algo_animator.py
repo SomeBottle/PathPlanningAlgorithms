@@ -56,7 +56,13 @@ class AlgorithmAnimator:
 
         # 创建动画
         ani = animation.FuncAnimation(
-            fig, _update, interval=1, frames=generator, blit=True, repeat=False
+            fig,
+            _update,
+            interval=1,
+            frames=generator,
+            blit=True,
+            repeat=False,
+            cache_frame_data=False,
         )
 
         if save_to_file is not None:

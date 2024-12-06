@@ -7,7 +7,11 @@ import math
 
 from .problem import Problem
 from .cell_status import CellStatus
+from .utils import close_problem_obstacles
 from exceptions import InvalidProblemArgument
+
+# 图像短边至少要有多长
+MIN_SIDE_LENGTH = 50
 
 
 def _rand_range(range_size: int) -> tuple:
@@ -91,6 +95,11 @@ def generate_partial_ring_problem(
     :param distance: 起点到终点至少要满足的 L2 距离，为 None 时会固定起点在左上角，终点在右下角。
     :return: 生成的寻路问题 Problem 对象
     """
+
+    # width, height 太小
+    if min(width, height) < MIN_SIDE_LENGTH:
+        raise ValueError(f"width and height should be at lease {MIN_SIDE_LENGTH}")
+
     if distance is not None:
         max_l2_dist = width**2 + height**2
         # 判断输入的 distance 是否有可能满足
@@ -163,6 +172,9 @@ def generate_partial_ring_problem(
 
             prev_x = x
 
+    # 填充对角处的障碍物，以支持搜索过程中 8 个方向的扩展
+    res_map = close_problem_obstacles(res_map)
+
     return Problem(res_map, (start_i, start_j), (end_i, end_j))
 
 
@@ -183,6 +195,11 @@ def generate_random_problem(
     :param noise_strength: 噪音强度（0-1），噪音越强路线抖动越厉害
     :return: 生成的寻路问题 Problem 对象
     """
+
+    # width, height 太小
+    if min(width, height) < MIN_SIDE_LENGTH:
+        raise ValueError(f"width and height should be at lease {MIN_SIDE_LENGTH}")
+
     area = width * height
     # 需要有多少格子有空位
     available_cells = area * available_cell_percent

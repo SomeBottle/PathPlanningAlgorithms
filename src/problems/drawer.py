@@ -7,10 +7,14 @@ import numpy as np
 
 from .cell_status import CellStatus
 from .problem import Problem
+from .utils import close_problem_obstacles
 
 START_POINT_COLOR = "#D91656"
 END_POINT_COLOR = "#80C4E9"
 LINE_WIDTH = 2  # 绘制线条的宽度
+
+# 图像短边至少要有多长
+MIN_SIDE_LENGTH = 50
 
 
 def draw_problem(width: int, height: int) -> Problem:
@@ -21,6 +25,10 @@ def draw_problem(width: int, height: int) -> Problem:
     :param height: 地图高度
     :return: 生成的寻路问题 Problem 对象
     """
+
+    # width, height 太小
+    if min(width, height) < MIN_SIDE_LENGTH:
+        raise ValueError(f"width and height should be at lease {MIN_SIDE_LENGTH}")
 
     # 主窗口
     root = tk.Tk()
@@ -134,7 +142,9 @@ def draw_problem(width: int, height: int) -> Problem:
 
     # 运行主循环
     root.mainloop()
+
     # 把 0/1 矩阵替换为枚举值矩阵
     pixels = np.where(pixels == 0, CellStatus.EMPTY, CellStatus.BLOCKED)
+    # 填充对角处的障碍物
     # 转换为 Problem 对象
-    return Problem(pixels.tolist(), start_pos, end_pos)
+    return Problem(close_problem_obstacles(pixels.tolist()), start_pos, end_pos)

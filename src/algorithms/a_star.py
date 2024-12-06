@@ -12,8 +12,13 @@ from .algorithm_base import AlgorithmBase
 from visualization.utils import hex_to_rgb
 from typing import Generator
 
-# 用于展示中间结果
+# 规定可行的方向
+# DIRECTIONS = [(0, 1), (1, 0), (0, -1), (-1, 0)]
 
+# 八个方向
+DIRECTIONS = [(0, 1), (1, 0), (0, -1), (-1, 0), (1, 1), (1, -1), (-1, 1), (-1, -1)]
+
+# 用于展示中间结果
 CLOSED_COLOR = "#A59D84"  # 确定下来的路径的颜色
 OPEN_COLOR = "#FFD2A0"  # 待探索的路径的颜色
 NEIGHBOR_COLOR = "#85A98F"  # 每个位置邻居的颜色
@@ -160,8 +165,7 @@ class AStarAlgorithm(AlgorithmBase):
             return True
 
         # 寻找邻居，将可行的地方加入到 open_list
-        directions = [(0, 1), (1, 0), (0, -1), (-1, 0)]  # 4 个行进方向
-        for deltas in directions:
+        for deltas in DIRECTIONS:
             # 邻居的坐标
             new_pos = (curr_node.pos[0] + deltas[0], curr_node.pos[1] + deltas[1])
             if not self._problem.in_bounds(*new_pos) or self._problem.is_blocked(

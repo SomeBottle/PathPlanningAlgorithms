@@ -12,14 +12,14 @@ from algorithms import AStarAlgorithm
 
 
 if __name__ == "__main__":
-    """problem = generate_random_problem(150, 80, 0.7)
+    """ problem = generate_random_problem(150, 80, 0.7)
     visualize_problem(problem)
     algo = AStarAlgorithm(problem)
     # 执行算法
     algo.solve()
     print(algo.solved_path_cost)
     print(algo.solved_path_coordinates)
-    visualize_result(problem, algo.solved_path_coordinates)"""
+    visualize_result(problem, algo.solved_path_coordinates) """
 
     """ problem = generate_partial_ring_problem(150, 80, ring_num=5, distance=30)
     visualize_problem(problem)
@@ -44,6 +44,6 @@ if __name__ == "__main__":
 
     ani = AlgorithmAnimator(algo)
 
-    ani.save('animation.mp4')
+    ani.show()
 
     print(algo.state)
