@@ -3,7 +3,11 @@ from problems import (
     generate_partial_ring_problem,
     draw_problem,
 )
-from visualization import visualize_problem, visualize_result
+from visualization import (
+    visualize_problem,
+    visualize_result,
+    AlgorithmAnimator,
+)
 from algorithms import AStarAlgorithm
 
 
@@ -24,11 +28,22 @@ if __name__ == "__main__":
     algo.solve()
     visualize_result(problem, algo.solved_path_coordinates) """
 
+    """ problem = draw_problem(150, 80)
+
+    visualize_problem(problem)
+    algo = AStarAlgorithm(problem)
+    # 执行算法
+    algo.solve()
+    visualize_result(problem, algo.solved_path_coordinates) """
+
     problem = draw_problem(150, 80)
 
     visualize_problem(problem)
 
-    algo = AStarAlgorithm(problem)
-    # 执行算法
-    algo.solve()
-    visualize_result(problem, algo.solved_path_coordinates)
+    algo = AStarAlgorithm(problem, record_int=True)
+
+    ani = AlgorithmAnimator(algo)
+
+    ani.save('animation.mp4')
+
+    print(algo.state)

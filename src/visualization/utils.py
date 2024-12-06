@@ -17,3 +17,14 @@ def scaled_figsize(m: float, n: float) -> tuple[float, float]:
     m /= factor
     n /= factor
     return (m, n)
+
+
+def hex_to_rgb(hex_str: str) -> tuple[int, int, int]:
+    """
+    把 16 进制颜色字符串转换为 RGB 值
+
+    :param hex_str: 16 进制颜色字符串，比如 #FF00FF
+    :return: RGB 值
+    """
+    hex_str = hex_str.lstrip("#")
+    return tuple(int(hex_str[i : i + 2], 16) for i in (0, 2, 4))

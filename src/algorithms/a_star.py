@@ -1,5 +1,5 @@
 """
-A* 算法
+A* 算法（带堆优化）
 """
 
 import heapq
@@ -8,15 +8,23 @@ from problems import Problem
 from .states import AlgorithmState
 from .algorithm_base import AlgorithmBase
 
+# 这里如果从 visualization 导入会造成环型导入
+from visualization.utils import hex_to_rgb
+from typing import Generator
+
+# 用于展示中间结果
+
+CLOSED_COLOR = "#A59D84"  # 确定下来的路径的颜色
+OPEN_COLOR = "#FFD2A0"  # 待探索的路径的颜色
+NEIGHBOR_COLOR = "#85A98F"  # 每个位置邻居的颜色
+UPDATED_NEIGHBOR_COLOR = "#D91656"  # 更新了的邻居的颜色
+PATH_COLOR = "#D91656"  # 走过的路径的颜色
+
 
 # A* 算法的结点
 class AStarNode:
     def __init__(
-        self,
-        path_cost=0.0,
-        dist_to_end=0.0,
-        parent=None,
-        pos=(0, 0),
+        self, path_cost=0.0, dist_to_end=0.0, parent=None, pos=(0, 0), record_int=False
     ):
         # 这个结点距离起点的路径的代价
         self.path_cost: float = path_cost
@@ -39,8 +47,8 @@ class AStarNode:
 # A* 算法
 class AStarAlgorithm(AlgorithmBase):
 
-    def __init__(self, problem: Problem):
-        super().__init__()
+    def __init__(self, problem: Problem, record_int=False):
+        super().__init__(problem, record_int)
         # Open List 实际上是一个小根堆
         self._open_list = []
         # Open Dict 存储 (i,j) -> AStarNode 的映射
@@ -48,12 +56,32 @@ class AStarAlgorithm(AlgorithmBase):
         # Closed Dict 存储 (i,j) -> AStarNode 的映射
         self._closed_dict = {}
         self._problem = problem
-        # 算法是否结束
-        self._state: AlgorithmState = AlgorithmState.INITIALIZED
         # 记录最终的路径
         self._solution_path: list[AStarNode] = []
+        # ============== 存储中间数据初始化 ==============
+        # 是否存储中间数据
+        self._record_int = record_int
+
+        if record_int:
+            # 存储每个像素绘制什么颜色
+            self._int_matrix = [
+                [self.EMPTY_COLOR] * self._problem.width
+                for _ in range(self._problem.height)
+            ]
+            # 存储邻居的位置
+            self._neighbors: list[tuple[int, int]] = []
+            # 存储发生更新的邻居的位置
+            self._updated_neighbors: list[tuple[int, int]] = []
+        # ============== 存储中间数据初始化完成 ==============
+
         # 把起点加入到开放列表中
         self._add_as_open(AStarNode(pos=problem.start))
+        # 算法状态
+        self._state: AlgorithmState = AlgorithmState.INITIALIZED
+
+    @property
+    def problem(self):
+        return self._problem
 
     def _add_as_open(self, node: AStarNode):
         """
@@ -63,6 +91,11 @@ class AStarAlgorithm(AlgorithmBase):
         """
         heapq.heappush(self._open_list, node)
         self._open_dict[node.pos] = node
+
+        # =========== 更新中间数据 ===========
+        if self._record_int:
+            self._int_matrix[node.pos[0]][node.pos[1]] = OPEN_COLOR
+        # =========== 中间数据更新完成 ===========
 
     def _pop_min_open(self) -> AStarNode:
         """
@@ -107,6 +140,17 @@ class AStarAlgorithm(AlgorithmBase):
         curr_node: AStarNode = self._pop_min_open()
         # 标记此结点已经确定（加入 Closed Dict）
         self._closed_dict[curr_node.pos] = curr_node
+
+        # =========== 更新中间数据 ===========
+        if self._record_int:
+            self._int_matrix[curr_node.pos[0]][curr_node.pos[1]] = CLOSED_COLOR
+            # 寻找本次邻居前清空之前的邻居数据
+            self._neighbors.clear()
+            self._updated_neighbors.clear()
+            # 生成中间路径
+            self._cache_solution(curr_node)
+        # =========== 中间数据更新完成 ===========
+
         # 检查是不是终点
         if curr_node.pos == self._problem.end:
             # 到达终点
@@ -132,6 +176,11 @@ class AStarAlgorithm(AlgorithmBase):
             # 新的路径代价（邻居距离终点的预估代价是没有变的）
             new_path_cost = curr_node.path_cost + 1  # 相距一步
 
+            # =========== 更新中间数据 ===========
+            if self._record_int:
+                self._neighbors.append(new_pos)  # 记录邻居
+            # =========== 中间数据更新完成 ===========
+
             # 判断这些邻居之前有没有被加入过 open_list
             if new_pos in self._open_dict:
                 # 如果加入过，看看能不能更新路径
@@ -142,6 +191,13 @@ class AStarAlgorithm(AlgorithmBase):
                     neighbor_node.path_cost = new_path_cost
                     # 因为小根堆的性质，更新路径后需要重新排序
                     heapq.heapify(self._open_list)
+
+                    # =========== 更新中间数据 ===========
+                    if self._record_int:
+                        self._updated_neighbors.append(
+                            new_pos
+                        )  # 记录被更新了路径的邻居
+                    # =========== 中间数据更新完成 ===========
             else:
                 # 否则把邻居加入 open_list
                 neighbor_node: AStarNode = AStarNode(
@@ -153,6 +209,29 @@ class AStarAlgorithm(AlgorithmBase):
                 self._add_as_open(neighbor_node)
 
         return True
+
+    def next_visual_generator(
+        self,
+    ) -> Generator[list[list[tuple[int, int, int]]], None, None]:
+        if not self._record_int:
+            print("Warning: record_int is False, next_visual_generator will not work.")
+            return
+        while self.has_next_step():
+            self.next_step()
+            # 先把中间数据图像拷贝一份，顺便转换为 RGB 元组
+            img_copy = [
+                [hex_to_rgb(color) for color in row] for row in self._int_matrix
+            ]
+            # 把邻居的数据加入
+            for nb in self._neighbors:
+                img_copy[nb[0]][nb[1]] = hex_to_rgb(NEIGHBOR_COLOR)
+            # 把被更新的邻居的数据加入
+            for unb in self._updated_neighbors:
+                img_copy[unb[0]][unb[1]] = hex_to_rgb(UPDATED_NEIGHBOR_COLOR)
+            # 绘制目前的路径
+            for pos in self.solved_path_coordinates:
+                img_copy[pos[0]][pos[1]] = hex_to_rgb(PATH_COLOR)
+            yield img_copy
 
     def solve(self):
         while self.has_next_step():
@@ -178,9 +257,4 @@ class AStarAlgorithm(AlgorithmBase):
 
     @property
     def state(self) -> AlgorithmState:
-        """
-        获得算法的状态
-
-        :return: 算法的状态
-        """
         return self._state
