@@ -3,10 +3,12 @@ A* 算法（带堆优化）
 """
 
 import heapq
+import math
 
 from problems import Problem
 from .states import AlgorithmState
 from .algorithm_base import AlgorithmBase
+from .utils import Direction
 
 # 这里如果从 visualization 导入会造成环型导入
 from visualization.utils import hex_to_rgb
@@ -16,7 +18,7 @@ from typing import Generator
 # DIRECTIONS = [(0, 1), (1, 0), (0, -1), (-1, 0)]
 
 # 八个方向
-DIRECTIONS = [(0, 1), (1, 0), (0, -1), (-1, 0), (1, 1), (1, -1), (-1, 1), (-1, -1)]
+DIRECTIONS = Direction.all()
 
 # 用于展示中间结果
 CLOSED_COLOR = "#A59D84"  # 确定下来的路径的颜色
@@ -29,7 +31,11 @@ PATH_COLOR = "#D91656"  # 走过的路径的颜色
 # A* 算法的结点
 class AStarNode:
     def __init__(
-        self, path_cost=0.0, dist_to_end=0.0, parent=None, pos=(0, 0), record_int=False
+        self,
+        path_cost=0.0,
+        dist_to_end=0.0,
+        parent=None,
+        pos=(0, 0),
     ):
         # 这个结点距离起点的路径的代价
         self.path_cost: float = path_cost
@@ -140,6 +146,8 @@ class AStarAlgorithm(AlgorithmBase):
         if not self.has_next_step():
             # 没有下一步了
             return False
+        else:
+            self._state = AlgorithmState.RUNNING
 
         # 取得到起点和终点距离之和最小的结点
         curr_node: AStarNode = self._pop_min_open()
@@ -165,9 +173,9 @@ class AStarAlgorithm(AlgorithmBase):
             return True
 
         # 寻找邻居，将可行的地方加入到 open_list
-        for deltas in DIRECTIONS:
+        for direction in DIRECTIONS:
             # 邻居的坐标
-            new_pos = (curr_node.pos[0] + deltas[0], curr_node.pos[1] + deltas[1])
+            new_pos = Direction.step(curr_node.pos, direction)
             if not self._problem.in_bounds(*new_pos) or self._problem.is_blocked(
                 *new_pos
             ):
@@ -177,8 +185,12 @@ class AStarAlgorithm(AlgorithmBase):
                 # 如果已经访问过并确定下来了，也跳过
                 continue
 
+            step_len = 1  # 这一步的长度
+            if Direction.is_diagonal(direction):
+                # 如果这一步是在对角移动，欧几里得步长实际上是 sqrt(2)
+                step_len = math.sqrt(2)
             # 新的路径代价（邻居距离终点的预估代价是没有变的）
-            new_path_cost = curr_node.path_cost + 1  # 相距一步
+            new_path_cost = curr_node.path_cost + step_len  # 相距一步
 
             # =========== 更新中间数据 ===========
             if self._record_int:

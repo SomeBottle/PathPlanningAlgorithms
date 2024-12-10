@@ -147,7 +147,7 @@ def generate_partial_ring_problem(
         )
 
         x_list = list(direction)
-        print(f"Center: ({center_i},{center_j}), xrange: {x_list}, radius:{radius}")
+        #print(f"Center: ({center_i},{center_j}), xrange: {x_list}, radius:{radius}")
         prev_x = None  # 记录上一个 x，用于插值，把圆填的圆满一点
         for x in direction:
             # 比如 x = upper_end 时就会停止绘制上半部分

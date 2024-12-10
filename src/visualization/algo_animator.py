@@ -10,15 +10,17 @@ from .utils import scaled_figsize, hex_to_rgb
 
 
 class AlgorithmAnimator:
-    def __init__(self, algo: AlgorithmBase):
+    def __init__(self, algo: AlgorithmBase, interval: int = 1):
         """
         初始化算法动画可视化实例.
 
         * 注：初始化算法时请指定 record_int=True，不然算法不会记录中间结果。
 
         :param algo: 算法实例。本方法会利用其 next_visual_generator 生成器生成动画
+        :param interval: 每一帧停留多少毫秒
         """
         self._algo = algo
+        self._interval = interval
 
     def _render(self, save_to_file: str | None = None):
         """
@@ -58,7 +60,7 @@ class AlgorithmAnimator:
         ani = animation.FuncAnimation(
             fig,
             _update,
-            interval=1,
+            interval=self._interval,
             frames=generator,
             blit=True,
             repeat=False,

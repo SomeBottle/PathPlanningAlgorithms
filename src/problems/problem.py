@@ -122,11 +122,22 @@ class Problem:
         """
         return 0 <= i < self._h and 0 <= j < self._w
 
+    def is_obstacle(self, i, j) -> bool:
+        """
+        检查 (i,j) 这个地方是不是障碍物。
+        （如果 (i,j) 越界，会返回 False，因为越界的地方障碍物也没定义）
+
+        :return: 是否是障碍物
+        """
+        if not self.in_bounds(i, j):
+            return False
+        return self._map[i][j] == CellStatus.BLOCKED
+
     def is_blocked(self, i, j) -> bool:
         """
-        检查 (i,j) 这个地方是否有障碍物
+        检查 (i,j) 这个地方是否走不通
 
-        :return: 是否有障碍物
+        :return: 是否有障碍物或者越出边界
         :note: 如果 (i,j) 越出边界，会直接返回 True
         """
         if not self.in_bounds(i, j):
