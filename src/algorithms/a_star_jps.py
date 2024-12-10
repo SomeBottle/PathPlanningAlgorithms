@@ -162,7 +162,7 @@ class AStarJPSAlgorithm(AlgorithmBase):
 
         return forced_neighbors
 
-    def _find_neighbor_directions(self, curr_node: AStarNode) -> list[tuple[int, int]]:
+    def _find_directions(self, curr_node: AStarNode) -> list[tuple[int, int]]:
         """
         找到 curr_node 应该行进的方向(最差情况有 8 个方向)
 
@@ -184,7 +184,8 @@ class AStarJPSAlgorithm(AlgorithmBase):
             if diagonal:
                 possible_directions.append((di, 0))
                 possible_directions.append((0, dj))
-            # 判断当前结点是否有强制邻居需要考虑
+            # 到这里，这个跳点必然有强制邻居
+            # 找到强制邻居的方向
             forced_neighbors_directions = self._get_forced_neighbors(
                 curr_node.pos, curr_dir
             )
@@ -304,8 +305,8 @@ class AStarJPSAlgorithm(AlgorithmBase):
             return True
 
         # --------------------------- Jump Point Search 核心部分
-        for direction in self._find_neighbor_directions(curr_node):
-            # direction 是一个可行的邻居方向
+        for direction in self._find_directions(curr_node):
+            # direction 是一个可行的跳点寻找方向
             jump_node = self._jump(curr_node, direction)
 
             if jump_node is not None:
