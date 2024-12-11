@@ -14,9 +14,6 @@ from .utils import Direction
 from visualization.utils import hex_to_rgb
 from typing import Generator
 
-# 规定可行的方向
-# DIRECTIONS = [(0, 1), (1, 0), (0, -1), (-1, 0)]
-
 # 八个方向
 DIRECTIONS = Direction.all()
 
@@ -259,6 +256,7 @@ class AStarJPSAlgorithm(AlgorithmBase):
                 # 当前结点是直接跳点
                 return neighbor_node
             # 5. 上面条件都没满足，继续按照这个方向走
+            # 论文中这里写成递归了，实际上没必要。
             i += di
             j += dj
             dist += step_len

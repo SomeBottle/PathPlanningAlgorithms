@@ -2,12 +2,16 @@
 定义 Problem 类
 """
 
+import pickle
 from .cell_status import CellStatus
 
 
 class Problem:
     def __init__(
-        self, res_map: list[list], start: tuple[int, int], end: tuple[int, int]
+        self,
+        res_map: list[list[CellStatus]],
+        start: tuple[int, int],
+        end: tuple[int, int],
     ):
         """
         初始化 Problem
@@ -25,6 +29,22 @@ class Problem:
         # 长度和宽度
         self._w = len(res_map[0])
         self._h = len(res_map)
+
+    @classmethod
+    def from_file(cls, file_path: str):
+        """
+        从文件中读取问题
+
+        (警告，请只加载值得信任的文件，pickle 有代码执行漏洞)
+
+        :param file_path: 文件路径（pickle 序列化文件）
+        :return: Problem 对象
+        """
+        try:
+            with open(file_path, "rb") as f:
+                return pickle.load(f)
+        except pickle.PickleError as e:
+            raise Exception("Failed to unpickle problem from file: ", e)
 
     @property
     def bin_map(self) -> list[list]:
@@ -143,6 +163,17 @@ class Problem:
         if not self.in_bounds(i, j):
             return True
         return self._map[i][j] == CellStatus.BLOCKED
+
+    def save(self, file_path: str):
+        """
+        把 Problem 对象持久化存储到路径 file_path
+
+        （实现用的是 pickle）
+
+        :param file_path: 文件路径
+        """
+        with open(file_path, "wb") as f:
+            pickle.dump(self, f)
 
     def __str__(self):
         res_str = ""

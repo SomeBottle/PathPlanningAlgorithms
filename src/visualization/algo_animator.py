@@ -22,11 +22,12 @@ class AlgorithmAnimator:
         self._algo = algo
         self._interval = interval
 
-    def _render(self, save_to_file: str | None = None):
+    def _render(self, save_to_file: str | None = None,fps:int=12):
         """
         渲染动画
 
         :param save_to_file: 保存动画的文件路径，如果为 None 则不保存
+        :param fps: 渲染的视频的 FPS
         """
         generator = self._algo.next_visual_generator()
 
@@ -82,10 +83,11 @@ class AlgorithmAnimator:
         """
         self._render()
 
-    def save(self, file_path: str):
+    def save(self, file_path: str, fps: int = 12):
         """
         保存动画
 
         :param file_path: 保存动画的文件路径
+        :param fps: 渲染的视频的 FPS
         """
-        self._render(file_path)
+        self._render(file_path,fps=fps)
