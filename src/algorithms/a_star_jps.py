@@ -55,8 +55,7 @@ class AStarNode:
 # A* 算法
 class AStarJPSAlgorithm(AlgorithmBase):
 
-    def __init__(self, problem: Problem, record_int=False):
-        super().__init__(problem, record_int)
+    def __init__(self, problem: Problem, record_int=False, diagonal_obstacles=True):
         # Open List 实际上是一个小根堆
         self._open_list = []
         # Open Dict 存储 (i,j) -> AStarNode 的映射
@@ -66,6 +65,8 @@ class AStarJPSAlgorithm(AlgorithmBase):
         self._problem = problem
         # 记录最终的路径
         self._solution_path: list[AStarNode] = []
+        # 是否考虑对角障碍物
+        self._diagonal_obstacles = diagonal_obstacles
         # ============== 存储中间数据初始化 ==============
         # 是否存储中间数据
         self._record_int = record_int
@@ -128,6 +129,33 @@ class AStarJPSAlgorithm(AlgorithmBase):
             end_node = end_node.parent
         self._solution_path.reverse()
 
+    def _has_diagonal_obstacle(
+        self, curr_pos: tuple[int, int], direction: tuple[int, int]
+    ) -> bool:
+        """
+        检查 curr_pos 这个地方沿着 direction 方向走会不会遇到对角障碍物
+
+        比如这些情况：
+
+        ■             ■
+        ↗ ■   ↗ ■   ↗
+
+        * 只有对角方向移动时会遇到对角障碍物。
+
+        （如果 diagonal_obstacles=False 会直接返回 False）
+
+        :param curr_pos: 当前位置
+        :param direction: 方向
+        :return: 是否遇到障碍物
+        """
+        # 不考虑对角障碍物 或 目前没有向对角方向走，就直接返回 False
+        if not self._diagonal_obstacles or not Direction.is_diagonal(direction):
+            return False
+        # 如果对角上有障碍物，就不能在这个方向走了
+        return self._problem.is_obstacle(
+            curr_pos[0] + direction[0], curr_pos[1]
+        ) or self._problem.is_obstacle(curr_pos[0], curr_pos[1] + direction[1])
+
     def _get_forced_neighbors(
         self, coordinate: tuple[int, int], direction: tuple[int, int]
     ) -> list[tuple[int, int]]:
@@ -142,7 +170,7 @@ class AStarJPSAlgorithm(AlgorithmBase):
         di, dj = direction
         forced_neighbors = []
         if Direction.is_diagonal(direction):
-            # 对角线方向运动。比如向右上方运动，就要判断左方和下方是否有障碍物
+            # 对角线方向运动。比如向右上方运动，左方或下方若有障碍物，则有强制邻居
             check_coord_1 = (i - di, j)
             check_coord_2 = (i, j - dj)
             if self._problem.is_obstacle(*check_coord_1):
@@ -150,7 +178,7 @@ class AStarJPSAlgorithm(AlgorithmBase):
             if self._problem.is_obstacle(*check_coord_2):
                 forced_neighbors.append((di, -dj))
         else:
-            # 水平或者竖直方向运动。比如向右方运动，要判断上方和下方是否有障碍物
+            # 水平或者竖直方向运动。比如向右方运动，上方或下方若有障碍物，则有强制邻居
             # 获得正交方向
             for d in Direction.orthogonal(direction):
                 odi, odj = d  # 正交方向
@@ -161,7 +189,7 @@ class AStarJPSAlgorithm(AlgorithmBase):
 
     def _find_directions(self, curr_node: AStarNode) -> list[tuple[int, int]]:
         """
-        找到 curr_node 应该行进的方向(最差情况有 8 个方向)
+        找到 curr_node 应该行进的方向 (最差情况有 8 个方向)
 
         :param curr_node: 当前结点
         :return: 可行的方向列表
@@ -194,9 +222,12 @@ class AStarJPSAlgorithm(AlgorithmBase):
         for d in possible_directions:
             # 按照 d 方向走一步后的坐标
             next_pos = Direction.step(curr_node.pos, d)
-            if not self._problem.in_bounds(*next_pos) or self._problem.is_blocked(
-                *next_pos
+            if (
+                not self._problem.in_bounds(*next_pos)
+                or self._problem.is_blocked(*next_pos)
+                or self._has_diagonal_obstacle(curr_node.pos, d)
             ):
+                # 如果有障碍物，这个方向就不可行
                 continue
             if next_pos in self._closed_dict:
                 # 如果这个位置已经访问过并确定下来了，也跳过
@@ -230,7 +261,11 @@ class AStarJPSAlgorithm(AlgorithmBase):
 
         # 按照这个方向向前走
         while True:
-            if not self._problem.in_bounds(i, j) or self._problem.is_obstacle(i, j):
+            if (
+                not self._problem.in_bounds(i, j)
+                or self._problem.is_obstacle(i, j)
+                or self._has_diagonal_obstacle(curr_node.pos, neighbor_direction)
+            ):
                 # 1. 走到边界外或者迎头撞上障碍物了
                 return None
             # 代表这个邻居的临时结点

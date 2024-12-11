@@ -11,12 +11,13 @@ class AlgorithmBase:
 
     EMPTY_COLOR = "#FFFFFF"  # 空白处的颜色
 
-    def __init__(self, problem: Problem, record_int=False):
+    def __init__(self, problem: Problem, record_int=False, diagonal_obstacles=True):
         """
         初始化算法
 
         :param: problem: 寻路问题对象
         :param: record_int: 是否记录中间结果，中间结果是用于 next_visual_generator 进行可视化动画展示的
+        :param diagonal_obstacles: 是否把对角障碍物考虑在内。搜索方向为对角时可能遇到对角障碍物，即四个格子中有其中一个对角存在障碍物，另一个对角是空的的情况。
         """
         pass
 

@@ -20,7 +20,7 @@ class Problem:
         :param start: 起点 (i, j)
         :param end: 终点 (i, j)
         """
-        # 地图矩阵，其中标记了障碍物(1)和无障碍物(0)的地方
+        # 地图矩阵，其中标记了障碍物(CellStatus.BLOCKED)和无障碍物(CellStatus.EMPTY 或 CellStatus.WALKED)的地方
         self._map = res_map
         # 起点
         self._start = start
@@ -46,6 +46,30 @@ class Problem:
         except pickle.PickleError as e:
             raise Exception("Failed to unpickle problem from file: ", e)
 
+    @classmethod
+    def from_matrix(cls, matrix: list[list[int]]):
+        """
+        从一个矩阵中读入问题。
+
+        :param matrix: 矩阵，0 为空，1 为阻塞，2 为走过，3 为起点，4 为终点
+        :return: Problem 对象
+        """
+        res_map = [[CellStatus.EMPTY] * len(matrix[0]) for _ in range(len(matrix))]
+        start_pos = (0, 0)
+        end_pos = (len(matrix) - 1, len(matrix[0]) - 1)
+        for i in range(len(matrix)):
+            for j in range(len(matrix[i])):
+                if matrix[i][j] == 1:
+                    res_map[i][j] = CellStatus.BLOCKED
+                elif matrix[i][j] == 2:
+                    res_map[i][j] = CellStatus.WALKED
+                elif matrix[i][j] == 3:
+                    start_pos = (i, j)
+                elif matrix[i][j] == 4:
+                    end_pos = (i, j)
+
+        return Problem(res_map, start_pos, end_pos)
+
     @property
     def bin_map(self) -> list[list]:
         """
@@ -55,7 +79,7 @@ class Problem:
         """
         b_map = [[0] * len(self._map[0]) for _ in range(len(self._map))]
         for i in range(len(self._map)):
-            for j in range(len(self._map[0])):
+            for j in range(len(self._map[i])):
                 if self._map[i][j] == CellStatus.BLOCKED:
                     b_map[i][j] = 1
         return b_map
@@ -69,7 +93,7 @@ class Problem:
         """
         n_map = [[0] * len(self._map[0]) for _ in range(len(self._map))]
         for i in range(len(self._map)):
-            for j in range(len(self._map[0])):
+            for j in range(len(self._map[i])):
                 if (i, j) == self._start:
                     n_map[i][j] = 3
                 elif (i, j) == self._end:

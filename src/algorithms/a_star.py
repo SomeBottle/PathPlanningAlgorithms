@@ -58,8 +58,7 @@ class AStarNode:
 # A* 算法
 class AStarAlgorithm(AlgorithmBase):
 
-    def __init__(self, problem: Problem, record_int=False):
-        super().__init__(problem, record_int)
+    def __init__(self, problem: Problem, record_int=False, diagonal_obstacles=True):
         # Open List 实际上是一个小根堆
         self._open_list = []
         # Open Dict 存储 (i,j) -> AStarNode 的映射
@@ -69,6 +68,8 @@ class AStarAlgorithm(AlgorithmBase):
         self._problem = problem
         # 记录最终的路径
         self._solution_path: list[AStarNode] = []
+        # 是否考虑对角障碍物
+        self._diagonal_obstacles = diagonal_obstacles
         # ============== 存储中间数据初始化 ==============
         # 是否存储中间数据
         self._record_int = record_int
@@ -142,6 +143,33 @@ class AStarAlgorithm(AlgorithmBase):
 
         return True
 
+    def _has_diagonal_obstacle(
+        self, curr_pos: tuple[int, int], direction: tuple[int, int]
+    ) -> bool:
+        """
+        检查 curr_pos 这个地方沿着 direction 方向走会不会遇到对角障碍物
+
+        比如这些情况：
+
+        ■             ■
+        ↗ ■   ↗ ■   ↗
+
+        * 只有对角方向移动时会遇到对角障碍物。
+
+        （如果 diagonal_obstacles=False 会直接返回 False）
+
+        :param curr_pos: 当前位置
+        :param direction: 方向
+        :return: 是否遇到障碍物
+        """
+        # 不考虑对角障碍物 或 目前没有向对角方向走，就直接返回 False
+        if not self._diagonal_obstacles or not Direction.is_diagonal(direction):
+            return False
+        # 如果对角上有障碍物，就不能在这个方向走了
+        return self._problem.is_obstacle(
+            curr_pos[0] + direction[0], curr_pos[1]
+        ) or self._problem.is_obstacle(curr_pos[0], curr_pos[1] + direction[1])
+
     def next_step(self) -> bool:
         if not self.has_next_step():
             # 没有下一步了
@@ -176,8 +204,10 @@ class AStarAlgorithm(AlgorithmBase):
         for direction in DIRECTIONS:
             # 邻居的坐标
             new_pos = Direction.step(curr_node.pos, direction)
-            if not self._problem.in_bounds(*new_pos) or self._problem.is_blocked(
-                *new_pos
+            if (
+                not self._problem.in_bounds(*new_pos)
+                or self._problem.is_blocked(*new_pos)
+                or self._has_diagonal_obstacle(curr_node.pos, direction)
             ):
                 # 如果这个邻居格子不可行或者是障碍物，就跳过
                 continue

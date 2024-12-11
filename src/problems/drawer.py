@@ -17,12 +17,13 @@ LINE_WIDTH = 2  # 绘制线条的宽度
 MIN_SIDE_LENGTH = 50
 
 
-def draw_problem(width: int, height: int) -> Problem:
+def draw_problem(width: int, height: int, close_diagonal_obstacles=False) -> Problem:
     """
     直接手动绘制问题
 
     :param width: 地图宽度
     :param height: 地图高度
+    :param close_diagonal_obstacles: 是否消除对角障碍物，如果为 True，生成的图中不会有对角障碍物。
     :return: 生成的寻路问题 Problem 对象
     """
 
@@ -145,6 +146,9 @@ def draw_problem(width: int, height: int) -> Problem:
 
     # 把 0/1 矩阵替换为枚举值矩阵
     pixels = np.where(pixels == 0, CellStatus.EMPTY, CellStatus.BLOCKED)
+    pixels = pixels.tolist()
     # 填充对角处的障碍物
+    if close_diagonal_obstacles:
+        pixels = close_problem_obstacles(pixels)
     # 转换为 Problem 对象
-    return Problem(close_problem_obstacles(pixels.tolist()), start_pos, end_pos)
+    return Problem(pixels, start_pos, end_pos)

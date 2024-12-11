@@ -84,7 +84,11 @@ def _float_range(start, end, step):
 
 
 def generate_partial_ring_problem(
-    width: int, height: int, ring_num: int = 1, distance: int | None = None
+    width: int,
+    height: int,
+    ring_num: int = 1,
+    distance: int | None = None,
+    close_diagonal_obstacles=False,
 ) -> Problem:
     """
     生成有半环型障碍的问题，生成的问题中不包含走过的路径（WALKED）
@@ -93,6 +97,7 @@ def generate_partial_ring_problem(
     :param height: 地图高度
     :param ring_num: 半环障碍的个数
     :param distance: 起点到终点至少要满足的 L2 距离，为 None 时会固定起点在左上角，终点在右下角。
+    :param close_diagonal_obstacles: 是否消除对角障碍物，如果为 True，生成的图中不会有对角障碍物。
     :return: 生成的寻路问题 Problem 对象
     """
 
@@ -147,7 +152,7 @@ def generate_partial_ring_problem(
         )
 
         x_list = list(direction)
-        #print(f"Center: ({center_i},{center_j}), xrange: {x_list}, radius:{radius}")
+        # print(f"Center: ({center_i},{center_j}), xrange: {x_list}, radius:{radius}")
         prev_x = None  # 记录上一个 x，用于插值，把圆填的圆满一点
         for x in direction:
             # 比如 x = upper_end 时就会停止绘制上半部分
@@ -173,7 +178,8 @@ def generate_partial_ring_problem(
             prev_x = x
 
     # 填充对角处的障碍物，以支持搜索过程中 8 个方向的扩展
-    res_map = close_problem_obstacles(res_map)
+    if close_diagonal_obstacles:
+        res_map = close_problem_obstacles(res_map)
 
     return Problem(res_map, (start_i, start_j), (end_i, end_j))
 

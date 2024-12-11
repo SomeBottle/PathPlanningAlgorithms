@@ -2,7 +2,7 @@ from problems import (
     generate_random_problem,
     generate_partial_ring_problem,
     draw_problem,
-    Problem
+    Problem,
 )
 from visualization import (
     visualize_problem,
@@ -46,26 +46,30 @@ if __name__ == "__main__":
 
     print(algo.state) """
 
-    problem = draw_problem(150, 80)
+    # problem = draw_problem(150, 80)
 
-    #problem=Problem.from_file('./problem.pkl')
+    problem = Problem.from_matrix(
+        [
+            [0, 0, 0, 1, 0, 0, 0, 4],
+            [0, 0, 1, 0, 1, 0, 0, 0],
+            [0, 1, 0, 3, 0, 1, 0, 0],
+            [0, 0, 1, 0, 1, 0, 0, 0],
+            [0, 0, 0, 1, 0, 0, 0, 0],
+        ]
+    )
+    """ problem = Problem.from_matrix(
+        [
+            [0,1,4],
+            [1,3,1],
+            [0,1,0],
+        ]
+    ) """
 
     visualize_problem(problem)
 
-    problem.save("./problem.pkl")
-
-    algo = AStarJPSAlgorithm(problem, record_int=True)
-
-    ani = AlgorithmAnimator(algo, interval=1)
-
-    ani.show()
-
-    print(algo.state)
-    print(algo.solved_path_cost)
-
     algo = AStarAlgorithm(problem, record_int=True)
 
-    ani = AlgorithmAnimator(algo, interval=1)
+    ani = AlgorithmAnimator(algo, interval=100)
 
     ani.show()
 
