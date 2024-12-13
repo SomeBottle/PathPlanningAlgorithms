@@ -422,7 +422,6 @@ class AStarJPSDetourAlgorithm(AlgorithmBase):
             jump_node = self._jump(curr_node, direction)
 
             if jump_node is not None:
-                print(f'jump_node:{jump_node.pos}')
                 # =========== 更新中间数据 ===========
                 if self._record_int:
                     self._neighbors.append(jump_node.pos)  # 记录邻居

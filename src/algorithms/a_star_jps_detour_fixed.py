@@ -311,7 +311,7 @@ class AStarJPSDetourAlgorithmFixed(AlgorithmBase):
             possible_directions = [d for d in DIRECTIONS]
         else:
             if curr_node.forced_direction is not None:
-                # 这个结点被强制指定了搜索方向
+                # 这个结点被强制指定了移动方向
                 curr_dir = curr_node.forced_direction
             else:
                 # 有父节点，计算方向
