@@ -260,7 +260,7 @@ class AStarAlgorithm(AlgorithmBase):
         self,
     ) -> Generator[list[list[tuple[int, int, int]]], None, None]:
         if not self._record_int:
-            print("Warning: record_int is False, next_visual_generator will not work.")
+            print("Warning: record_int of the algorithm is False, next_visual_generator will not work.")
             return
         while self.has_next_step():
             self.next_step()

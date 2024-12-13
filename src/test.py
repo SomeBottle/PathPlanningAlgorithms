@@ -9,7 +9,7 @@ from visualization import (
     visualize_result,
     AlgorithmAnimator,
 )
-from algorithms import AStarAlgorithm, AStarJPSAlgorithm
+from algorithms import AStarAlgorithm, AStarJPSAlgorithm, AStarJPSDetourAlgorithm
 
 
 if __name__ == "__main__":
@@ -46,30 +46,69 @@ if __name__ == "__main__":
 
     print(algo.state) """
 
-    # problem = draw_problem(150, 80)
+    #problem = draw_problem(150, 80, close_diagonal_obstacles=False)
 
-    problem = Problem.from_matrix(
+    """ problem = Problem.from_matrix(
         [
             [0, 0, 0, 1, 0, 0, 0, 4],
-            [0, 0, 1, 0, 1, 0, 0, 0],
-            [0, 1, 0, 3, 0, 1, 0, 0],
+            [0, 0, 1, 0, 0, 0, 0, 0],
+            [0, 1, 0, 3, 1, 1, 0, 0],
             [0, 0, 1, 0, 1, 0, 0, 0],
             [0, 0, 0, 1, 0, 0, 0, 0],
+        ]
+    ) """
+    """ problem = Problem.from_matrix(
+        [
+            [0, 0, 0, 0, 0, 0, 0, 4],
+            [0, 0, 0, 1, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0, 1, 0],
+            [0, 3, 1, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+        ]
+    ) """
+    problem = Problem.from_matrix(
+        [
+            [0, 0, 0, 0, 0, 0, 0, 4],
+            [0, 0, 0, 1, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 1, 0],
+            [0, 3, 1, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
         ]
     )
     """ problem = Problem.from_matrix(
         [
-            [0,1,4],
-            [1,3,1],
-            [0,1,0],
+            [0, 0, 0, 0, 0, 0, 0, 4],
+            [0, 0, 0, 1, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0, 1, 0],
+            [0, 3, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
         ]
     ) """
-
+    """ problem = Problem.from_matrix(
+        [
+            [0, 1, 4],
+            [1, 3, 1],
+            [0, 1, 0],
+        ]
+    )
+ """
+    #problem=Problem.from_file("./problem.pkl")
+    
     visualize_problem(problem)
+
+
+    algo = AStarJPSDetourAlgorithm(problem, record_int=True)
+
+    ani = AlgorithmAnimator(algo, interval=5)
+
+    ani.show()
+
+    print(algo.state)
+    print(algo.solved_path_cost)
 
     algo = AStarAlgorithm(problem, record_int=True)
 
-    ani = AlgorithmAnimator(algo, interval=100)
+    ani = AlgorithmAnimator(algo, interval=5)
 
     ani.show()
 

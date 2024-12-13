@@ -1,5 +1,12 @@
 """
-A* 算法 JPS 优化（带堆优化）
+A* 算法 JPS 优化（带堆优化），且支持绕过对角障碍。  
+
+这里绕过对角障碍的思路是，遇到障碍物时如果能绕过：
+
+1. 先记录绕路结点，并不是实际将其加入结点链表。
+2. 立马修正当前的路径长度 path_cost，因为绕路肯定会使得路径变长，会影响算法的搜索过程，必须立即更新。
+
+然后在生成路径的时候，把记录的绕路结点都加上即可。  
 """
 
 import heapq
@@ -53,7 +60,7 @@ class AStarNode:
 
 
 # A* 算法
-class AStarJPSAlgorithm(AlgorithmBase):
+class AStarJPSDetourAlgorithm(AlgorithmBase):
 
     def __init__(self, problem: Problem, record_int=False, diagonal_obstacles=True):
         # Open List 实际上是一个小根堆
@@ -67,6 +74,8 @@ class AStarJPSAlgorithm(AlgorithmBase):
         self._solution_path: list[AStarNode] = []
         # 是否考虑对角障碍物
         self._diagonal_obstacles = diagonal_obstacles
+        # 存储绕路结点坐标
+        self._bypass_nodes = {}
         # ============== 存储中间数据初始化 ==============
         # 是否存储中间数据
         self._record_int = record_int
@@ -91,6 +100,39 @@ class AStarJPSAlgorithm(AlgorithmBase):
     @property
     def problem(self):
         return self._problem
+
+    def _add_bypass_pos(
+        self,
+        bypass_pos: tuple[int, int],
+        parent_pos: tuple[int, int],
+        node_pos: tuple[int, int],
+    ):
+        """
+        存储绕路结点坐标，标记从一个结点的父结点 parent 到这个结点 node 需要经过一个绕路结点 bypass
+
+        :param bypass_pos: 绕路结点坐标
+        :param parent_pos: 父结点坐标
+        :param node_pos: 结点坐标
+        """
+        if self._bypass_nodes.get(parent_pos) is None:
+            self._bypass_nodes[parent_pos] = {}
+        self._bypass_nodes[parent_pos][node_pos] = bypass_pos
+
+    def _get_bypass_pos(
+        self,
+        parent_pos: tuple[int, int],
+        node_pos: tuple[int, int],
+    ) -> tuple[int, int] | None:
+        """
+        根据 parent 和 node 取出其要绕路的结点坐标，可能没有
+
+        :param parent_pos: 父结点坐标
+        :param node_pos: 结点坐标
+        :return: 绕路结点坐标，没有的话会返回 None
+        """
+        if self._bypass_nodes.get(parent_pos) is None:
+            return None
+        return self._bypass_nodes[parent_pos].get(node_pos)
 
     def _add_as_open(self, node: AStarNode):
         """
@@ -121,6 +163,8 @@ class AStarJPSAlgorithm(AlgorithmBase):
         """
         从最后一个结点，通过父结点开始逆推，得到最终的结果路径
 
+        注意，这个方法只是把 AStarNode 按顺序放在一个列表中，没有加入绕路结点。
+
         :param end_node: 最后一个结点
         """
         self._solution_path = []
@@ -129,11 +173,11 @@ class AStarJPSAlgorithm(AlgorithmBase):
             end_node = end_node.parent
         self._solution_path.reverse()
 
-    def _has_diagonal_obstacle(
+    def _get_diagonal_obstacles(
         self, curr_pos: tuple[int, int], direction: tuple[int, int]
-    ) -> bool:
+    ) -> tuple[bool, tuple[int, int] | None]:
         """
-        检查 curr_pos 这个地方沿着 direction 方向走会不会遇到对角障碍物
+        检查 curr_pos 这个地方沿着 direction 方向走是否遇到对角障碍物
 
         比如这些情况：
 
@@ -142,19 +186,31 @@ class AStarJPSAlgorithm(AlgorithmBase):
 
         * 只有对角方向移动时会遇到对角障碍物。
 
-        （如果 diagonal_obstacles=False 会直接返回 False）
+        （如果 diagonal_obstacles=False 会直接返回 (False, None)）
 
         :param curr_pos: 当前位置
         :param direction: 方向
-        :return: 是否遇到障碍物
+        :return: (是否有对角障碍物, 绕路结点坐标)，绕路节点坐标可能是 None
         """
         # 不考虑对角障碍物 或 目前没有向对角方向走，就直接返回 False
         if not self._diagonal_obstacles or not Direction.is_diagonal(direction):
-            return False
-        # 如果对角上有障碍物，就不能在这个方向走了
-        return self._problem.is_obstacle(
-            curr_pos[0] + direction[0], curr_pos[1]
-        ) or self._problem.is_obstacle(curr_pos[0], curr_pos[1] + direction[1])
+            return (False, None)
+        obs1_coord = curr_pos[0] + direction[0], curr_pos[1]
+        obs2_coord = curr_pos[0], curr_pos[1] + direction[1]
+        obs1 = self._problem.is_obstacle(*obs1_coord)
+        obs2 = self._problem.is_obstacle(*obs2_coord)
+        if obs1 and obs2:
+            # 此路不通
+            bypass_pos = None
+        elif obs1:
+            bypass_pos = obs2_coord
+        elif obs2:
+            bypass_pos = obs1_coord
+        else:
+            # 没有堵塞
+            return (False, None)
+
+        return (True, bypass_pos)
 
     def _get_forced_neighbors(
         self, coordinate: tuple[int, int], direction: tuple[int, int]
@@ -187,12 +243,12 @@ class AStarJPSAlgorithm(AlgorithmBase):
 
         return forced_neighbors
 
-    def _find_directions(self, curr_node: AStarNode) -> list[tuple[int, int]]:
+    def _find_directions(self, curr_node: AStarNode) -> list[tuple[int, int, int]]:
         """
         找到 curr_node 应该行进的方向 (最差情况有 8 个方向)
 
         :param curr_node: 当前结点
-        :return: 可行的方向列表
+        :return: 可行的方向列表 (di, dj, 沿着这方向走一步的长度)
         """
         possible_directions = []
         if curr_node.parent is None:
@@ -222,10 +278,11 @@ class AStarJPSAlgorithm(AlgorithmBase):
         for d in possible_directions:
             # 按照 d 方向走一步后的坐标
             next_pos = Direction.step(curr_node.pos, d)
+            diagonal_ob, bypass_coord = self._get_diagonal_obstacles(curr_node.pos, d)
             if (
                 not self._problem.in_bounds(*next_pos)
                 or self._problem.is_blocked(*next_pos)
-                or self._has_diagonal_obstacle(curr_node.pos, d)
+                or (diagonal_ob and bypass_coord is None)
             ):
                 # 如果有障碍物，这个方向就不可行
                 continue
@@ -233,39 +290,44 @@ class AStarJPSAlgorithm(AlgorithmBase):
                 # 如果这个位置已经访问过并确定下来了，也跳过
                 continue
 
-            res.append(d)
+            # 沿着这个方向走一步的长度
+            if bypass_coord is not None:
+                # 只要有绕路结点，原本斜着走要拆分为走 2 步
+                first_step_len = 2
+                # 另外记录绕路结点
+                self._add_bypass_pos(bypass_coord, curr_node.pos, next_pos)
+            else:
+                first_step_len = math.sqrt(d[0] ** 2 + d[1] ** 2)
+
+            res.append((d[0], d[1], first_step_len))
 
         return res
 
     def _jump(
-        self, curr_node: AStarNode, neighbor_direction: tuple[int, int]
+        self, curr_node: AStarNode, search_direction: tuple[int, int, int]
     ) -> AStarNode | None:
         """
         从 neighbor_direction 指向的邻居开始，沿着这个方向找到跳点
 
         :param curr_node: 当前结点
-        :param neighbor_direction: 邻居方向
+        :param neighbor_direction: 搜索方向 (di, dj, 沿着 search_direction 走第一步的长度)
         :return: 跳点结点，没找到就是 None
         """
         # 先计算 neighbor_direction 指向的邻居坐标
-        i, j = Direction.step(curr_node.pos, neighbor_direction)
-        di, dj = neighbor_direction
+        i, j = Direction.step(curr_node.pos, search_direction[:2])
+        di, dj, first_step_len = search_direction
         # 是否在按对角方向行进
-        diagonal = Direction.is_diagonal(neighbor_direction)
+        diagonal = Direction.is_diagonal(search_direction[:2])
 
-        # 每一步的长度
+        # 除了第一步外每一步的长度
         step_len = math.sqrt(di**2 + dj**2)
 
         # 目前距离 curr_node 的长度，因为现在已经移动到邻居了，距离加一步
-        dist = 0 + step_len
+        dist = 0 + first_step_len
 
         # 按照这个方向向前走
         while True:
-            if (
-                not self._problem.in_bounds(i, j)
-                or self._problem.is_obstacle(i, j)
-                or self._has_diagonal_obstacle(curr_node.pos, neighbor_direction)
-            ):
+            if not self._problem.in_bounds(i, j) or self._problem.is_obstacle(i, j):
                 # 1. 走到边界外或者迎头撞上障碍物了
                 return None
             # 行进过程中的临时结点
@@ -275,26 +337,41 @@ class AStarJPSAlgorithm(AlgorithmBase):
                 pos=(i, j),
                 dist_to_end=self._problem.dist_to_end(i, j),
             )
+            diagonal_ob, bypass_coord = self._get_diagonal_obstacles(
+                tmp_node.pos, search_direction[:2]
+            )
+            if diagonal_ob and bypass_coord is None:
+                # 1. 如果对角障碍物堵塞了，也没法继续前行了
+                return None
             # 2. 如果正好遇到了最终结点，直接返回这个结点作为跳点
             if (i, j) == self._problem.end:
                 return tmp_node
             # 3. 如果是对角线方向，先要向两个分量方向寻找跳点
             if diagonal:
                 if (
-                    self._jump(tmp_node, (di, 0)) is not None
-                    or self._jump(tmp_node, (0, dj)) is not None
+                    self._jump(tmp_node, (di, 0, 1)) is not None
+                    or self._jump(tmp_node, (0, dj, 1)) is not None
                 ):
                     # 如果找到了跳点，当前结点就是间接跳点
                     return tmp_node
             # 4. 判断当前结点是否有强制邻居需要考虑
-            if len(self._get_forced_neighbors((i, j), neighbor_direction)) > 0:
+            if len(self._get_forced_neighbors((i, j), search_direction[:2])) > 0:
                 # 当前结点是直接跳点
                 return tmp_node
             # 5. 上面条件都没满足，继续按照这个方向走
             # 论文中这里写成递归了，实际上没必要。
+
             i += di
             j += dj
-            dist += step_len
+
+            # 有绕路情况一定要及时修正 path_cost，不然会影响算法的搜索决策
+            if bypass_coord is not None:
+                # 如果需要绕路，这一步的步长肯定是 2
+                dist += 2
+                # 记录绕路结点
+                self._add_bypass_pos(bypass_coord, tmp_node.pos, (i, j))
+            else:
+                dist += step_len
 
     def has_next_step(self) -> bool:
         if len(self._open_list) == 0:
@@ -403,7 +480,8 @@ class AStarJPSAlgorithm(AlgorithmBase):
         """
         最终的结果路径（坐标表示）
 
-        这里因为是 JPS，存储的是跳点，需要进行一定的填充
+        1. 这里因为是 JPS，存储的是跳点，需要进行一定的填充。
+        2. 途中可能有一些绕路结点，在这里要加到路径上。
 
         :return: 路径上的结点坐标
         """
@@ -413,8 +491,14 @@ class AStarJPSAlgorithm(AlgorithmBase):
                 di, dj = Direction.get(self._solution_path[i - 1].pos, node.pos)
                 p_i, p_j = self._solution_path[i - 1].pos
                 while True:
-                    p_i += di
-                    p_j += dj
+                    next_i = p_i + di
+                    next_j = p_j + dj
+                    bypass_pos = self._get_bypass_pos((p_i, p_j), (next_i, next_j))
+                    if bypass_pos is not None:
+                        # 如果中间有绕路结点就加上
+                        padded_solution.append(bypass_pos)
+                    p_i = next_i
+                    p_j = next_j
                     if (p_i, p_j) == node.pos:
                         break
                     padded_solution.append((p_i, p_j))

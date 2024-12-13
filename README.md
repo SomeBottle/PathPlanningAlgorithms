@@ -68,7 +68,7 @@ A* 算法每一次迭代在取出一个落脚点后，都会**扩展其所有邻
 
 * 设结点 $x$ 的父结点是 $parent(x)$，所谓的“方向”就是 $parent(x)$ 指向 $x$ 的这个方向。
 
-![8_directions](./assets/8_directions.png)  
+![8_directions](./pics/8_directions.png)  
 > 图中标出来了 8 个“邻居”的位置，在 JPS 中这是 8 个寻找方向。  
 
 * 上图中是一个起始节点，其没有父结点，因此需要向 8 个方向去查找跳点，将跳点加入 `open_list`。  
@@ -81,13 +81,13 @@ A* 算法每一次迭代在取出一个落脚点后，都会**扩展其所有邻
 
 1. **水平/竖直方向**。
 
-    ![move_horizontally](./assets/move_horizontally.png) ![move_horizontally_with_obstacle](./assets/move_horizontally_with_obstacle.png)  
+    ![move_horizontally](./pics/move_horizontally.png) ![move_horizontally_with_obstacle](./pics/move_horizontally_with_obstacle.png)  
 
     沿着这个方向**一直走**直到遇到特定的（见参考文章）障碍物，就有了强制邻居（紫色），也就找到了跳点。
 
 2. **对角方向**。
 
-    ![move_diagonally](./assets/move_diagonally.png) ![move_diagonally_with_obstacle](./assets/move_diagonally_with_obstacle.png)  
+    ![move_diagonally](./pics/move_diagonally.png) ![move_diagonally_with_obstacle](./pics/move_diagonally_with_obstacle.png)  
 
     先沿着水平和竖直分量方向按 1 进行，然后再沿着对角线方向一直走直至遇到特定的（见参考文章）障碍物，就有了强制邻居（紫色），就找到了跳点。
 
@@ -109,7 +109,7 @@ A* 算法每一次迭代在取出一个落脚点后，都会**扩展其所有邻
 
     * 每个结点最多只有两个强制邻居，比如下面这张图：
 
-        ![two obstacles](./assets/two_obstacles.png)  
+        ![two obstacles](./pics/two_obstacles.png)  
 
         > 这里就有 $1+2=3$ 个找跳点的方向。  
 
@@ -126,12 +126,13 @@ src
 │   ├── __init__.py
 │   ├── a_star.py # A* 算法
 │   ├── a_star_jps.py # A* 算法 Jump Point Search 版
+│   ├── a_star_jps_detour.py # A* 算法 Jump Point Search 版，支持对角障碍绕路
+│   ├── a_star_jps_detour_failed.py # 失败的绕路实现
 │   ├── algorithm_base.py # 算法基类
 │   ├── states.py # 算法状态枚举量
 │   └── utils.py # 工具类，主要是方向 Direction 相关的类
 ├── exceptions
 │   └── __init__.py # 一些自定义异常
-├── main.py # 主类
 ├── problems
 │   ├── __init__.py
 │   ├── cell_status.py # 图中每个格子状态的枚举量
@@ -139,15 +140,55 @@ src
 │   ├── generator.py # 随机问题生成
 │   ├── problem.py # 问题类，用于表示每个二维栅格图
 │   └── utils.py # 工具方法
-├── test.py
-├── tree.txt
+├── test.py # 一些测试用例
 └── visualization
     ├── __init__.py
-    ├── algo_animator.py
-    ├── problem_visualizer.py
-    ├── result_visualizer.py
-    └── utils.py
+    ├── algo_animator.py # 算法执行过程动画化模块
+    ├── problem_visualizer.py # 将问题进行可视化的模块
+    ├── result_visualizer.py # 将求解结果进行可视化的模块
+    └── utils.py # 可视化相关的工具方法
 ```
+
+各个方法的调用方式可以参考 `test.py` 以及各个方法的 docstring 注释。  
+
+## 对角障碍物的处理
+
+创建算法对象的时候有一个参数 `diagonal_obstacles` 可供配置，默认为 `True`，其决定算法在执行搜索时是否能穿过对角障碍物，类似下面这些情况：  
+
+> Case.1
+> ![diagonal_obstacle_case_1](./pics/diagonal_obstacle_case_1.png)  
+
+> Case.2
+> ![diagonal_obstacle_case_2_1](./pics/diagonal_obstacle_case_2_1.png)  
+> ![diagonal_obstacle_case_2_2](./pics/diagonal_obstacle_case_2_2.png) 
+
+咱之所以想到添加这个参数，是因为在实际应用中为机器人规划路线时，这样斜着穿过对角障碍物的情况会导致机器人与障碍物发生碰撞。
+
+* 若 `diagonal_obstacles=True`，程序会把这种障碍物考虑在内，搜索时不会穿过这样的障碍物。
+* 若 `diagonal_obstacles=False`，程序会忽略这种障碍物，搜索时就可以直接穿过。  
+
+但问题随之而来，JPS 算法是很依赖于对角方向的移动的。上面 Case.1 虽然影响不大，但是 Case.2 可能会使得 JPS 无法求解，比如：  
+
+![jps_diagonal_obstacle_case_2](./pics/jps_diagonal_obstacle_case_2.png)  
+
+这种情况下很明显 JPS 只能搜索左侧这一部分，而右侧的搜索方向因为有 Case.2 的对角障碍物，完全被封死了，导致算法无法求解。
+
+对于 Case.2 的对角障碍物，我希望 JPS 算法能多走几步以绕过障碍物，像这样：  
+
+![jps_diagonal_obstacle_case_2_solution](./pics/jps_diagonal_obstacle_case_2_solution.png)  
+
+实现的时候为了能让 JPS 算法在右上角（图中）这个地方能继续沿着红色箭头这个方向搜索，实际上我只是**暂时记录了**红色框这里的绕路结点并**修正了到达右上角的路径长度**罢了。    
+
+在算法求解完成后，生成路径的时候，再把所有在录的绕路结点都加进去。
+
+* 注意，路径长度必须立即修正，不然可能影响到算法的搜索过程。
+
+这部分的实现位于 `a_star_jps_detour.py` 中。
+
+**PS**：观察到很有意思的一点，如果考虑绕过这些障碍物，JPS 解出的路径代价和 A* 可能是不同的，可能是次优解，但也是可以接受的；但是如果不考虑对角障碍物，JPS 和 A* 解出的代价几乎总是相同的。  
+
+* 这大概是因为 JPS 在设计之初就假设是可以斜着穿过这种对角障碍物（Case.2）的，我设计的绕路方式实际上没有修改算法的搜索机制，因此算法可能会忽略一些更优的转折点。
+
 
 ## 参考文献
 

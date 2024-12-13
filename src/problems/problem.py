@@ -31,7 +31,7 @@ class Problem:
         self._h = len(res_map)
 
     @classmethod
-    def from_file(cls, file_path: str):
+    def from_file(cls, file_path: str) -> "Problem":
         """
         从文件中读取问题
 
@@ -47,7 +47,7 @@ class Problem:
             raise Exception("Failed to unpickle problem from file: ", e)
 
     @classmethod
-    def from_matrix(cls, matrix: list[list[int]]):
+    def from_matrix(cls, matrix: list[list[int]]) -> "Problem":
         """
         从一个矩阵中读入问题。
 
