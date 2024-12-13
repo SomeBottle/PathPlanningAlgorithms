@@ -7,6 +7,8 @@ A* 算法 JPS 优化（带堆优化），且支持绕过对角障碍。
 2. 立马修正当前的路径长度 path_cost，因为绕路肯定会使得路径变长，会影响算法的搜索过程，必须立即更新。
 
 然后在生成路径的时候，把记录的绕路结点都加上即可。  
+
+    - SomeBottle 20241213
 """
 
 import heapq
@@ -104,35 +106,35 @@ class AStarJPSDetourAlgorithm(AlgorithmBase):
     def _add_bypass_pos(
         self,
         bypass_pos: tuple[int, int],
-        parent_pos: tuple[int, int],
-        node_pos: tuple[int, int],
+        pos_1: tuple[int, int],
+        pos_2: tuple[int, int],
     ):
         """
-        存储绕路结点坐标，标记从一个结点的父结点 parent 到这个结点 node 需要经过一个绕路结点 bypass
+        存储绕路结点坐标，标记从 pos_1 坐标到 pos_2 坐标需要经过一个绕路结点 bypass
 
         :param bypass_pos: 绕路结点坐标
-        :param parent_pos: 父结点坐标
-        :param node_pos: 结点坐标
+        :param pos_1: 前一个坐标
+        :param pos_2: 后一个坐标
         """
-        if self._bypass_nodes.get(parent_pos) is None:
-            self._bypass_nodes[parent_pos] = {}
-        self._bypass_nodes[parent_pos][node_pos] = bypass_pos
+        if self._bypass_nodes.get(pos_1) is None:
+            self._bypass_nodes[pos_1] = {}
+        self._bypass_nodes[pos_1][pos_2] = bypass_pos
 
     def _get_bypass_pos(
         self,
-        parent_pos: tuple[int, int],
-        node_pos: tuple[int, int],
+        pos_1: tuple[int, int],
+        pos_2: tuple[int, int],
     ) -> tuple[int, int] | None:
         """
-        根据 parent 和 node 取出其要绕路的结点坐标，可能没有
+        根据 pos_1 和 pos_2 取出其要绕路的结点坐标，可能没有
 
-        :param parent_pos: 父结点坐标
-        :param node_pos: 结点坐标
+        :param pos_1: 前一个结点的坐标
+        :param pos_2: 后一个结点的坐标
         :return: 绕路结点坐标，没有的话会返回 None
         """
-        if self._bypass_nodes.get(parent_pos) is None:
+        if self._bypass_nodes.get(pos_1) is None:
             return None
-        return self._bypass_nodes[parent_pos].get(node_pos)
+        return self._bypass_nodes[pos_1].get(pos_2)
 
     def _add_as_open(self, node: AStarNode):
         """
@@ -420,6 +422,7 @@ class AStarJPSDetourAlgorithm(AlgorithmBase):
             jump_node = self._jump(curr_node, direction)
 
             if jump_node is not None:
+                print(f'jump_node:{jump_node.pos}')
                 # =========== 更新中间数据 ===========
                 if self._record_int:
                     self._neighbors.append(jump_node.pos)  # 记录邻居

@@ -19,7 +19,8 @@ class Direction:
         cls, coordinate_1: tuple[int, int], coordinate_2: tuple[int, int]
     ) -> tuple[int, int]:
         """
-        根据两个坐标计算出方向
+        计算从 coordinate_1 到 coordinate_2 的方向
+
         :param coordinate_1: 运动前的坐标
         :param coordinate_2: 运动后的坐标
         :return: 方向 (di, dj), di,dj ∈ {-1,0,1}
@@ -30,6 +31,22 @@ class Direction:
             int(di / abs(di)) if di != 0 else 0,
             int(dj / abs(dj)) if dj != 0 else 0,
         )
+
+    @classmethod
+    def dist(
+        cls, coordinate_1: tuple[int, int], coordinate_2: tuple[int, int]
+    ) -> float:
+        """
+        计算从 coordinate_1 到 coordinate_2 的欧几里得距离  
+
+        :param coordinate_1: 运动前的坐标
+        :param coordinate_2: 运动后的坐标
+        :return: 欧几里得距离
+        """
+        return (
+            (coordinate_1[0] - coordinate_2[0]) ** 2
+            + (coordinate_1[1] - coordinate_2[1]) ** 2
+        ) ** 0.5
 
     @classmethod
     def step(

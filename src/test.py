@@ -9,8 +9,7 @@ from visualization import (
     visualize_result,
     AlgorithmAnimator,
 )
-from algorithms import AStarAlgorithm, AStarJPSAlgorithm, AStarJPSDetourAlgorithm
-
+from algorithms import AStarAlgorithm, AStarJPSDetourAlgorithmFixed
 
 if __name__ == "__main__":
     """problem = generate_random_problem(150, 80, 0.7)
@@ -46,7 +45,7 @@ if __name__ == "__main__":
 
     print(algo.state) """
 
-    #problem = draw_problem(150, 80, close_diagonal_obstacles=False)
+    problem = draw_problem(150, 80, close_diagonal_obstacles=False)
 
     """ problem = Problem.from_matrix(
         [
@@ -66,7 +65,7 @@ if __name__ == "__main__":
             [0, 0, 0, 0, 0, 0, 0, 0],
         ]
     ) """
-    problem = Problem.from_matrix(
+    """ problem = Problem.from_matrix(
         [
             [0, 0, 0, 0, 0, 0, 0, 4],
             [0, 0, 0, 1, 0, 0, 0, 0],
@@ -74,7 +73,16 @@ if __name__ == "__main__":
             [0, 3, 1, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0, 0, 0],
         ]
-    )
+    ) """
+    """ problem = Problem.from_matrix(
+        [
+            [0, 0, 0, 1, 0, 0, 0, 4],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [3, 0, 0, 0, 0, 0, 0, 0],
+        ]
+    ) """
     """ problem = Problem.from_matrix(
         [
             [0, 0, 0, 0, 0, 0, 0, 4],
@@ -92,14 +100,13 @@ if __name__ == "__main__":
         ]
     )
  """
-    #problem=Problem.from_file("./problem.pkl")
-    
+    # problem=Problem.from_file("./problem.pkl")
+
     visualize_problem(problem)
 
+    algo = AStarJPSDetourAlgorithmFixed(problem, record_int=True)
 
-    algo = AStarJPSDetourAlgorithm(problem, record_int=True)
-
-    ani = AlgorithmAnimator(algo, interval=5)
+    ani = AlgorithmAnimator(algo, interval=1)
 
     ani.show()
 
@@ -108,7 +115,7 @@ if __name__ == "__main__":
 
     algo = AStarAlgorithm(problem, record_int=True)
 
-    ani = AlgorithmAnimator(algo, interval=5)
+    ani = AlgorithmAnimator(algo, interval=1)
 
     ani.show()
 

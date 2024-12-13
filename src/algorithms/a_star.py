@@ -1,5 +1,7 @@
 """
 A* 算法（带堆优化）
+
+    - SomeBottle 20241129
 """
 
 import heapq
