@@ -144,7 +144,7 @@ def test_both_a_star_and_jps(diagonal_obstacles=True):
     :param diagonal_obstacles: 是否考虑对角障碍
     """
     problem = Problem.from_file(PROBLEM_FILE)
-    #problem = generate_random_problem(150, 80, 0.7)
+    # problem = generate_random_problem(150, 80, 0.7)
     # A*
     algo = AStarAlgorithm(problem, diagonal_obstacles=diagonal_obstacles)
     start_time = time.perf_counter_ns()
@@ -181,5 +181,4 @@ def test_visualize_result():
 
 
 if __name__ == "__main__":
-    test_both_a_star_and_jps()
     pass

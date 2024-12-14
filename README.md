@@ -8,11 +8,36 @@
 
 还别说，路径规划真挺有趣吧~ (。・∀・)ノ   
 
+## 目录
+
+- [0. 展示柜](#0-展示柜)
+- [1. `./src` 目录结构](#1-src-目录结构)
+- [2. 一些个人心得](#2-一些个人心得)
+  - [2.1. 梳理一下](#21-梳理一下)
+  - [2.2. JPS 算法碎碎念](#22-jps-算法碎碎念)
+- [3. 容易被绕进去的地方](#3-容易被绕进去的地方)
+  - [3.1. 强制邻居是怎么引导扩展结点的？](#31-强制邻居是怎么引导扩展结点的)
+- [4. 对角障碍物的处理](#4-对角障碍物的处理)
+  - [4.1. 初探](#41-初探)
+  - [4.2. 绕过对角障碍物](#42-绕过对角障碍物)
+  - [4.3. 修正绕路后的搜索策略](#43-修正绕路后的搜索策略)
+- [5. 其他需要说明的地方](#5-其他需要说明的地方)
+  - [5.1. 生成问题时去除对角障碍物](#51-生成问题时去除对角障碍物)
+- [6. 踩到的一个坑](#6-踩到的一个坑)
+- [7. 不足之处](#7-不足之处)
+- [8. 总结](#8-总结)
+- [参考文献](#参考文献)
+
 ## 0. 展示柜
 
-<video src="./examples/a_star.mp4" controls="controls" width="500" height="300"></video>
+A* 算法：  
 
-<video src="./examples/a_star_jps_detour.mp4" controls="controls" width="500" height="300"></video>
+https://github.com/user-attachments/assets/3d610e65-9467-4bdb-8d27-76819883da8b  
+
+
+带对角障碍物绕路机制的 Jump Point Search 算法：  
+
+https://github.com/user-attachments/assets/2fa6bd97-676a-42d3-b8dd-9a82d7968845
 
 
 
@@ -57,7 +82,7 @@ src
 * `a_star.py` - 传统 A* 算法实现。
 * `a_star_jps.py` - 传统 JPS 算法实现，`diagonal_obstacles=True` 时穿不过 ![diagonal_obstacle_small_1](./pics/diagonal_obstacle_small_1.png) 这种对角障碍，但是可以通过 ![diagonal_obstacle_small_2](./pics/diagonal_obstacle_small_2.png) 这种角障碍。
 * `a_star_jps_detour.py` - 支持绕过角障碍物的 JPS 算法实现，对于这种情况会绕路：![diagonal_obstacle_small_3](./pics/diagonal_obstacle_small_3.png)。  
-* `a_star_jps_detour_fixed.py` - 在 `a_star_jps_detour` 的基础上添加了绕路后的额外搜索策略，让求解得到的路径代价和 A* 的几乎一致。
+* `a_star_jps_detour_fixed.py` - 在 `a_star_jps_detour` 的基础上添加了绕路后的额外搜索策略，让求解得到的路径代价和 A* 的一致。
 
 ## 2. 一些个人心得
 
@@ -78,7 +103,7 @@ Jump Point Search 优化的 A* 算法则要厉害多了，其通过一些策略�
 💡 从上面也可以看出来，路径规划算法在性能方面一个很重要的点就是——**扩展结点的策略**。
 
 * 扩展结点换个说法，其实就是程序认为**可能存在于最优路径上的结点**。程序会从这些结点出发寻找下一个可能的落脚点。
-* 因此迭代过程中**需要扩展的结点越少**，需要检查的结点就越少，算法的内存消耗就越小，同时也能更快求解。
+* 因此迭代过程中**需要扩展的结点越少**，需要检查的结点就越少，算法的内存消耗就越小，同时相对来说也能更快求解（但不一定更快，取决于实际情况）。
 
 ### 2.2. JPS 算法碎碎念
 
@@ -201,16 +226,16 @@ A* 算法每一次迭代在取出一个落脚点后，都会**扩展其所有邻
 
 ![jps_diagonal_obstacle_case_2_solution](./pics/jps_diagonal_obstacle_case_2_solution.png)  
 
-实现的时候我**并没有改变 JPS 的搜索策略**，JPS 算法仍然继续沿着红色箭头这个方向搜索跳点，实际上我只是**暂时记录了**红色框代表的绕路结点（[`_add_bypass_pos`](./src/algorithms/a_star_jps_detour.py#L106)）并**修正了到达右上角的路径长度**（[L296](./src/algorithms/a_star_jps_detour.py#L296), [L370](./src/algorithms/a_star_jps_detour.py#L370)）罢了。   
+实现的时候我**并没有改变 JPS 的搜索策略**，JPS 算法仍然继续沿着红色箭头这个方向搜索跳点，实际上我只是**暂时记录了**红色框代表的绕路结点（[`_add_bypass_pos`](./src/algorithms/a_star_jps_detour.py#L106)）并**修正了到达右上角的路径长度**（[L297](./src/algorithms/a_star_jps_detour.py#L297), [L374](./src/algorithms/a_star_jps_detour.py#L374)）罢了。   
 
 * 注意，路径长度必须立即修正，不然可能影响到算法的搜索过程。
 
 🤔 **会遇到绕路情况的操作有两种**：  
 
-1. 从 `open_list` 取出一个结点后确定搜索方向时（[`_find_directions`](./src/algorithms/a_star_jps_detour.py#L248)）。  
-2. 沿着搜索方向查找跳点时（[`_jump`](./src/algorithms/a_star_jps_detour.py#L308)）。  
+1. 从 `open_list` 取出一个结点后确定搜索方向时（[`_find_directions`](./src/algorithms/a_star_jps_detour.py#L249)）。  
+2. 沿着搜索方向查找跳点时（[`_jump`](./src/algorithms/a_star_jps_detour.py#L309)）。  
 
-在算法求解完成后，**生成路径的时候，再把所有在录的绕路结点都加进去**（[`solved_path_coordinates`](./src/algorithms/a_star_jps_detour.py#L481)）。  
+在算法求解完成后，**生成路径的时候，再把所有在录的绕路结点都加进去**（[`solved_path_coordinates`](./src/algorithms/a_star_jps_detour.py#L485)）。  
 
 
 💡 这部分的实现位于 `a_star_jps_detour.py` 中。
@@ -230,7 +255,9 @@ A* 算法每一次迭代在取出一个落脚点后，都会**扩展其所有邻
 
 🤔 从图中我发现，因为发生了绕路，算法原本的搜索策略没法保证找到最优路径。**应当在绕路结点这里额外进行一些搜索**，比如图中在 `#DETOUR_2` 这里需要沿着蓝色斜箭头（平行于原本的搜索方向，黄色斜箭头）这个方向进行搜索。  
 
-💡 因此，需要**把绕路结点也加入** `open_list`，并**强制其方向平行于原本的搜索方向**（[L313](./src/algorithms/a_star_jps_detour_fixed.py#L313)），以检查可能被忽略的关键结点。   
+💡 因此，需要**把绕路结点也加入** `open_list`，并**强制其方向平行于原本的搜索方向**（[L302](./src/algorithms/a_star_jps_detour_fixed.py#L302)），以检查可能被忽略的关键结点。   
+
+* 这里“加入 `open_list`”只是临时加入，详见[第 6 节](#6-踩到的一个坑)。  
 
 ----
 
@@ -246,7 +273,7 @@ A* 算法每一次迭代在取出一个落脚点后，都会**扩展其所有邻
 
     💡 图中这里的绕路结点 `#DETOUR` 左方是没有实际的结点的，需要在其左侧添加一个父节点，并将这个父节点的父链接连接到路径（黄色箭头这条线）上的上一个跳点（[L145](./src/algorithms/a_star_jps_detour_fixed.py#L145)）。  
 
-    这样一来就能得到和 A* 算法几乎一致的路径代价了。  
+    这样一来就能求解得到和 A* 算法一致的路径代价了。  
 
 ## 5. 其他需要说明的地方
 
@@ -267,16 +294,33 @@ A* 算法每一次迭代在取出一个落脚点后，都会**扩展其所有邻
     > ![diagonal_obstacles_after_close](./pics/diagonal_obstacles_after_close.png)   
 
 
-🤓☝️ 创建算法对象时如果指定 `diagonal_obstacles=False`，算法执行过程中就可以穿过对角障碍物，这种情况下你可以预先用 `close_diagonal_obstacles=True` 消除掉所有对角障碍物，没有对角障碍物，`diagonal_obstacles` 选项其实就没用了。     
+🤓☝️ 初始化算法对象时如果指定 `diagonal_obstacles=False`，算法执行过程中就可以穿过对角障碍物，这种情况下你可以预先用 `close_diagonal_obstacles=True` 消除掉所有对角障碍物，没有对角障碍物，`diagonal_obstacles` 选项其实就没用了。     
 
 ## 6. 踩到的一个坑
+
+上面提到将绕路结点“加入”到 `open_list` 中。  
+
+最开始我在实现 `a_star_jps_detour_fixed` 这部分算法时，为了图方便，让绕路结点以和其他结点一样的方式加入 `open_list`，即在加入前检查 `open_list` 中**是否已经有相同坐标的结点**，如果有则进行比较，若待加入结点更优则进行替换。  
+
+这样做，在障碍物少的图中还看不出端倪，但是一旦障碍物多起来且随机分布起来（比如用 `generate_random_problem(150, 80, 0.7)` 生成的），很明显 JPS 算法求解得到的路径代价比 A* 要大。  
+
+😩 被这个问题折磨了一下午后我终于发现，绕路结点“加入”到 `open_list` 中是有诀窍的：  
+
+1. 设绕路结点所在坐标为 $(x_d,y_d)$ 。
+2. 绕路结点**不需要进行任何检查，直接加入** `open_list`，但是**不标记** $(x_d,y_d)$ 存在于 `open_list` 中。  
+    - 我的实现是用优先队列（小根堆）来存储开放列表中的待处理结点，另外用字典去标记已经加入开放列表的结点坐标。这里就直接把绕路结点加入堆，而不在字典中存储其坐标。   
+3. 绕路结点被从 `open_list` 取出后，**不加入** `closed_list`。  
+
+即把绕路结点当开放列表中的临时结点处理，其不应该决定到达 $(x_d,y_d)$ 的路线（不加入 `closed_list`），亦不应该影响算法中其他结点加入 `open_list` 的过程（**不标记** $(x_d,y_d)$ 存在于 `open_list` 中，因为可能有其他坐标为 $(x_d,y_d)$ 的结点会被加入开放列表，其不应该和绕路结点冲突）。  
+
+💡 绕路结点只是提示算法可能的新关键路径，**不应该和原算法其他结点发生冲突**。  
 
 
 ## 7. 不足之处
 
 很尴尬的是，JPS 算法在有大量随机障碍物的图中求解速度要慢于 A*。  
 
-* 虽然 JPS 扩展的结点数量比 A* 少了很多，但是 JPS 寻找跳点的开销其实也不可小觑...  
+* 虽然 JPS 扩展的结点数量比 A* 少了很多，但是 JPS 寻找跳点的开销其实也不可小觑...尤其是在障碍物比较复杂的图中。   
 
 (⌒‿⌒)つ：你可否知道一个叫 JPS+ 的优化版本？  
 
