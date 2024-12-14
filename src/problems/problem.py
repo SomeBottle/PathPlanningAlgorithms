@@ -4,6 +4,7 @@
 
 import pickle
 from .cell_status import CellStatus
+from .utils import close_problem_obstacles
 
 
 class Problem:
@@ -47,11 +48,14 @@ class Problem:
             raise Exception("Failed to unpickle problem from file: ", e)
 
     @classmethod
-    def from_matrix(cls, matrix: list[list[int]]) -> "Problem":
+    def from_matrix(
+        cls, matrix: list[list[int]], close_diagonal_obstacles=False
+    ) -> "Problem":
         """
         从一个矩阵中读入问题。
 
         :param matrix: 矩阵，0 为空，1 为阻塞，2 为走过，3 为起点，4 为终点
+        :param close_diagonal_obstacles: 是否消除对角障碍物，如果为 True，生成的图中不会有对角障碍物。
         :return: Problem 对象
         """
         res_map = [[CellStatus.EMPTY] * len(matrix[0]) for _ in range(len(matrix))]
@@ -67,6 +71,9 @@ class Problem:
                     start_pos = (i, j)
                 elif matrix[i][j] == 4:
                     end_pos = (i, j)
+
+        if close_diagonal_obstacles:
+            res_map = close_problem_obstacles(res_map)
 
         return Problem(res_map, start_pos, end_pos)
 

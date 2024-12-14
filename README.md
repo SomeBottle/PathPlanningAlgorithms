@@ -8,6 +8,14 @@
 
 还别说，路径规划真挺有趣吧~ (。・∀・)ノ   
 
+## 0. 展示柜
+
+<video src="./examples/a_star.mp4" controls="controls" width="500" height="300"></video>
+
+<video src="./examples/a_star_jps_detour.mp4" controls="controls" width="500" height="300"></video>
+
+
+
 ## 1. `./src` 目录结构
 
 ```bash
@@ -237,15 +245,21 @@ A* 算法每一次迭代在取出一个落脚点后，都会**扩展其所有邻
 
 * `src/problems/generator.py` 中的 `generate_partial_ring_problem` 方法
 * `src/problems/draw.py` 中的 `draw_problem` 方法
+* `src/problems/problem.py` 中的 `Problem.from_matrix` 静态工厂方法
 
-上面两个方法都有一个 `close_diagonal_obstacles` 参数，默认为 `False`。  
+上面几个方法都有一个 `close_diagonal_obstacles` 参数，默认为 `False`。  
 
 * 当这个参数为 `True` 时，会对图像进行平滑操作，去除对角障碍物，示例如下：  
 
     > `close_diagonal_obstacles=False` （默认）时：  
-    > 
+    > ![diagonal_obstacles_before_close](./pics/diagonal_obstacles_before_close.png)  
 
-    
+    > `close_diagonal_obstacles=True` 时：  
+    > ![diagonal_obstacles_after_close](./pics/diagonal_obstacles_after_close.png)   
+
+
+🤓☝️ 创建算法对象时如果指定 `diagonal_obstacles=False`，算法执行过程中就可以穿过对角障碍物，这种情况下你可以预先用 `close_diagonal_obstacles=True` 消除掉所有对角障碍物，没有对角障碍物，`diagonal_obstacles` 选项其实就没用了。    
+
 
 
 ## 6. 总结

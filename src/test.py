@@ -45,13 +45,11 @@ if __name__ == "__main__":
 
     print(algo.state) """
 
-    problem = draw_problem(150, 80, close_diagonal_obstacles=False)
+    """ problem = draw_problem(150, 80, close_diagonal_obstacles=False)
 
     visualize_problem(problem)
 
-    problem = draw_problem(150, 80, close_diagonal_obstacles=True)
-
-    visualize_problem(problem)
+    problem.save('problem.bin') """
 
     """ problem = Problem.from_matrix(
         [
@@ -80,6 +78,20 @@ if __name__ == "__main__":
             [0, 0, 0, 0, 0, 0, 0, 0],
         ]
     ) """
+    problem = Problem.from_matrix(
+        [
+            [0, 0, 0, 0, 0, 0, 0, 4],
+            [0, 0, 0, 1, 0, 0, 0, 0],
+            [0, 0, 0, 0, 1, 0, 0, 0],
+            [0, 3, 1, 0, 0, 1, 0, 0],
+            [0, 0, 0, 0, 0, 0, 1, 0],
+        ],
+        close_diagonal_obstacles=True,
+    )
+
+    visualize_problem(problem)
+
+    exit(0)
     """ problem = Problem.from_matrix(
         [
             [0, 0, 0, 1, 0, 0, 0, 4],
@@ -108,7 +120,9 @@ if __name__ == "__main__":
  """
     # problem=Problem.from_file("./problem.pkl")
 
-    algo = AStarJPSDetourAlgorithmFixed(problem, record_int=True,diagonal_obstacles=False)
+    algo = AStarJPSDetourAlgorithmFixed(
+        problem, record_int=True, diagonal_obstacles=False
+    )
 
     ani = AlgorithmAnimator(algo, interval=1)
 
@@ -117,7 +131,7 @@ if __name__ == "__main__":
     print(algo.state)
     print(algo.solved_path_cost)
 
-    algo = AStarAlgorithm(problem, record_int=True,diagonal_obstacles=False)
+    algo = AStarAlgorithm(problem, record_int=True, diagonal_obstacles=False)
 
     ani = AlgorithmAnimator(algo, interval=1)
 

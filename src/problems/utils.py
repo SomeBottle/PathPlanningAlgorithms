@@ -10,7 +10,7 @@ def close_problem_obstacles(
     res_map: list[list[CellStatus]],
 ) -> list[list[CellStatus]]:
     """
-    对问题障碍物矩阵进行处理，封闭掉一些小地方，以支持让寻路过程能向八个方向扩展。
+    对问题障碍物矩阵进行处理，封闭掉一些对角障碍物，消除对角障碍物问题。
 
     :param res_map: 问题障碍物矩阵
     :return: 处理后的障碍物矩阵
@@ -37,8 +37,8 @@ def close_problem_obstacles(
     # 2x2 对角阵
     diag_unit = np.diag([1, 1])  # 主对角
     counter_diag_unit = np.fliplr(diag_unit)  # 副对角
-    for i in range(np_map.shape[0] - 2):
-        for j in range(np_map.shape[1] - 2):
+    for i in range(np_map.shape[0] - 1):
+        for j in range(np_map.shape[1] - 1):
             if np.array_equal(np_map[i : i + 2, j : j + 2], diag_unit):
                 # 主对角，填左下角
                 map_copy[i + 1][j] = CellStatus.BLOCKED
