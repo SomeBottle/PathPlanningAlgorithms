@@ -199,8 +199,9 @@ class AStarJPSDetourAlgorithm(AlgorithmBase):
             return (False, None)
         obs1_coord = curr_pos[0] + direction[0], curr_pos[1]
         obs2_coord = curr_pos[0], curr_pos[1] + direction[1]
-        obs1 = self._problem.is_obstacle(*obs1_coord)
-        obs2 = self._problem.is_obstacle(*obs2_coord)
+        # 这里用 is_blocked，越界的地方也要算进去
+        obs1 = self._problem.is_blocked(*obs1_coord)
+        obs2 = self._problem.is_blocked(*obs2_coord)
         if obs1 and obs2:
             # 此路不通
             bypass_pos = None
@@ -342,12 +343,15 @@ class AStarJPSDetourAlgorithm(AlgorithmBase):
             diagonal_ob, bypass_coord = self._get_diagonal_obstacles(
                 tmp_node.pos, search_direction[:2]
             )
+
+            # 2. 如果正好遇到了最终结点，直接返回这个结点作为跳点
+            # 注意这个要放在对角障碍物判断的前面，否则终点在角落里时 diagonal_ob=True，本方法会返回，导致终点被忽略。
+            if (i, j) == self._problem.end:
+                return tmp_node
+
             if diagonal_ob and bypass_coord is None:
                 # 1. 如果对角障碍物堵塞了，也没法继续前行了
                 return None
-            # 2. 如果正好遇到了最终结点，直接返回这个结点作为跳点
-            if (i, j) == self._problem.end:
-                return tmp_node
             # 3. 如果是对角线方向，先要向两个分量方向寻找跳点
             if diagonal:
                 if (

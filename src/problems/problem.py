@@ -199,12 +199,12 @@ class Problem:
         """
         把 Problem 对象持久化存储到路径 file_path
 
-        （实现用的是 pickle）
+        （实现用的是 pickle，pickle 协议版本 v4）
 
         :param file_path: 文件路径
         """
         with open(file_path, "wb") as f:
-            pickle.dump(self, f)
+            pickle.dump(self, f, protocol=4)
 
     def __str__(self):
         res_str = ""

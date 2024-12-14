@@ -11,8 +11,6 @@ A* 算法 JPS 优化（带堆优化），且支持绕过对角障碍，路径搜
 
 除此之外本算法还修正了绕路后的搜索方向，保证能和 A* 算法得到一致的路径代价。
 
-同时 _add_as_open 这个方法也改写了，防止重复添加 open_list 中已经存在的结点。
-
     - SomeBottle 20241213
 """
 
@@ -154,7 +152,7 @@ class AStarJPSDetourAlgorithmFixed(AlgorithmBase):
 
         bypass_node.parent = real_parent_node
         bypass_node.path_cost = real_parent_node.path_cost + 1
-        self._add_as_open(bypass_node)
+        self._add_as_open(bypass_node, bypass_node=True)
 
     def _get_bypass_pos(
         self,
@@ -172,30 +170,18 @@ class AStarJPSDetourAlgorithmFixed(AlgorithmBase):
             return None
         return self._bypass_nodes[pos_1].get(pos_2)
 
-    def _add_as_open(self, node: AStarNode):
+    def _add_as_open(self, node: AStarNode, bypass_node: bool = False):
         """
         将结点加入到开放列表中
 
         （此方法会检查是否重复添加，如果重复添加，会保留最优的）
 
         :param node: 要加入的结点
+        :param bypass_node: 这个结点是不是绕路结点，绕路结点只会临时加入堆中。
         """
-        if node.pos in self._open_dict:
-            # 这个坐标的结点之前加入过，比较代价
-            exist_node: AStarNode = self._open_dict[node.pos]
-            if node.path_cost < exist_node.path_cost:
-                # f(x)=g(x)+h(x)，这里两个结点的 h(x) 一致，只用比较 g(x)
-                exist_node.parent = node.parent
-                exist_node.path_cost = node.path_cost
-                # 更新小根堆
-                heapq.heapify(self._open_list)
-                # =========== 更新中间数据 ===========
-                if self._record_int:
-                    self._updated_neighbors.append(node.pos)
-                # =========== 中间数据更新完成 ===========
-        else:
-            # 否则直接加入 open_list
-            heapq.heappush(self._open_list, node)
+        heapq.heappush(self._open_list, node)
+        # 绕路结点只临时加入堆，并不作为实际的绕路结点处理
+        if not bypass_node:
             self._open_dict[node.pos] = node
 
         # =========== 更新中间数据 ===========
@@ -211,7 +197,9 @@ class AStarJPSDetourAlgorithmFixed(AlgorithmBase):
         """
         node: AStarNode = heapq.heappop(self._open_list)
         # 同时从 dict 中移除
-        del self._open_dict[node.pos]
+        # 如果是临时添加的绕路结点(forced_direction 不为 None)，本身就没有加入 _open_dict，不作处理。
+        if node.forced_direction is None:
+            del self._open_dict[node.pos]
         return node
 
     def _cache_solution(self, end_node: AStarNode):
@@ -252,8 +240,9 @@ class AStarJPSDetourAlgorithmFixed(AlgorithmBase):
             return (False, None)
         obs1_coord = curr_pos[0] + direction[0], curr_pos[1]
         obs2_coord = curr_pos[0], curr_pos[1] + direction[1]
-        obs1 = self._problem.is_obstacle(*obs1_coord)
-        obs2 = self._problem.is_obstacle(*obs2_coord)
+        # 这里用 is_blocked，越界的地方也要算进去
+        obs1 = self._problem.is_blocked(*obs1_coord)
+        obs2 = self._problem.is_blocked(*obs2_coord)
         if obs1 and obs2:
             # 此路不通
             bypass_pos = None
@@ -384,7 +373,6 @@ class AStarJPSDetourAlgorithmFixed(AlgorithmBase):
 
         # 目前距离 curr_node 的长度，因为现在已经移动到邻居了，距离加一步
         dist = 0 + first_step_len
-
         # 按照这个方向向前走
         while True:
             if not self._problem.in_bounds(i, j) or self._problem.is_obstacle(i, j):
@@ -400,12 +388,15 @@ class AStarJPSDetourAlgorithmFixed(AlgorithmBase):
             diagonal_ob, bypass_coord = self._get_diagonal_obstacles(
                 tmp_node.pos, search_direction[:2]
             )
+            # 2. 如果正好遇到了最终结点，直接返回这个结点作为跳点
+            # 注意这个要放在对角障碍物判断的前面，否则终点在角落里时 diagonal_ob=True，本方法会返回，导致终点被忽略。
+            if (i, j) == self._problem.end:
+                return tmp_node
+
             if diagonal_ob and bypass_coord is None:
                 # 1. 如果对角障碍物堵塞了，也没法继续前行了
                 return None
-            # 2. 如果正好遇到了最终结点，直接返回这个结点作为跳点
-            if (i, j) == self._problem.end:
-                return tmp_node
+
             # 3. 如果是对角线方向，先要向两个分量方向寻找跳点
             if diagonal:
                 if (
@@ -453,8 +444,10 @@ class AStarJPSDetourAlgorithmFixed(AlgorithmBase):
 
         # 取得到起点和终点距离之和最小的结点
         curr_node: AStarNode = self._pop_min_open()
-        # 标记此结点已经确定（加入 Closed Dict）
-        self._closed_dict[curr_node.pos] = curr_node
+        # 绕路结点是临时添加的，不加入 closed_dict
+        if curr_node.forced_direction is None:
+            # 标记此结点已经确定（加入 Closed Dict）
+            self._closed_dict[curr_node.pos] = curr_node
 
         # =========== 更新中间数据 ===========
         if self._record_int:
@@ -484,8 +477,23 @@ class AStarJPSDetourAlgorithmFixed(AlgorithmBase):
                 if self._record_int:
                     self._neighbors.append(jump_node.pos)  # 记录邻居
                 # =========== 中间数据更新完成 ===========
-                # 加入 open_list
-                self._add_as_open(jump_node)
+                # 找到了跳点，先检查有没有加入过 open_list
+                if jump_node.pos in self._open_dict:
+                    # 如果加入过，看看能不能更新路径
+                    exist_node: AStarNode = self._open_dict[jump_node.pos]
+                    if jump_node.path_cost < exist_node.path_cost:
+                        # 如果新的路径代价更小，更新路径
+                        exist_node.parent = curr_node
+                        exist_node.path_cost = jump_node.path_cost
+                        # 更新小根堆
+                        heapq.heapify(self._open_list)
+                        # =========== 更新中间数据 ===========
+                        if self._record_int:
+                            self._updated_neighbors.append(jump_node.pos)
+                        # =========== 中间数据更新完成 ===========
+                else:
+                    # 否则直接加入 open_list
+                    self._add_as_open(jump_node)
 
         # --------------------------- Jump Point Search 核心部分结束
 

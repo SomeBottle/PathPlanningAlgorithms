@@ -40,6 +40,8 @@ src
 │   ├── problem.py # 问题类，用于表示每个二维栅格图
 │   └── utils.py # 工具方法
 ├── test.py # 一些测试用例
+├── requirements.txt # Python 依赖
+├── problem.bin # 一个示例问题，可以用 Problem.from_file 载入（pickle v4，要求 Python >= 3.4）  
 └── visualization
     ├── __init__.py
     ├── algo_animator.py # 算法执行过程动画化模块
@@ -49,6 +51,13 @@ src
 ```
 
 各个方法的调用方式可以参考 `test.py` 以及各个方法的 docstring 注释。  
+
+每个算法实现的 `.py` 文件头部都有一些说明。   
+
+* `a_star.py` - 传统 A* 算法实现。
+* `a_star_jps.py` - 传统 JPS 算法实现，`diagonal_obstacles=True` 时穿不过 ![diagonal_obstacle_small_1](./pics/diagonal_obstacle_small_1.png) 这种对角障碍，但是可以通过 ![diagonal_obstacle_small_2](./pics/diagonal_obstacle_small_2.png) 这种角障碍。
+* `a_star_jps_detour.py` - 支持绕过角障碍物的 JPS 算法实现，对于这种情况会绕路：![diagonal_obstacle_small_3](./pics/diagonal_obstacle_small_3.png)。  
+* `a_star_jps_detour_fixed.py` - 在 `a_star_jps_detour` 的基础上添加了绕路后的额外搜索策略，让求解得到的路径代价和 A* 的几乎一致。
 
 ## 2. 一些个人心得
 
@@ -237,7 +246,7 @@ A* 算法每一次迭代在取出一个落脚点后，都会**扩展其所有邻
 
     💡 图中这里的绕路结点 `#DETOUR` 左方是没有实际的结点的，需要在其左侧添加一个父节点，并将这个父节点的父链接连接到路径（黄色箭头这条线）上的上一个跳点（[L145](./src/algorithms/a_star_jps_detour_fixed.py#L145)）。  
 
-    这样一来最后才能正确地生成路径。  
+    这样一来就能得到和 A* 算法几乎一致的路径代价了。  
 
 ## 5. 其他需要说明的地方
 
@@ -258,11 +267,22 @@ A* 算法每一次迭代在取出一个落脚点后，都会**扩展其所有邻
     > ![diagonal_obstacles_after_close](./pics/diagonal_obstacles_after_close.png)   
 
 
-🤓☝️ 创建算法对象时如果指定 `diagonal_obstacles=False`，算法执行过程中就可以穿过对角障碍物，这种情况下你可以预先用 `close_diagonal_obstacles=True` 消除掉所有对角障碍物，没有对角障碍物，`diagonal_obstacles` 选项其实就没用了。    
+🤓☝️ 创建算法对象时如果指定 `diagonal_obstacles=False`，算法执行过程中就可以穿过对角障碍物，这种情况下你可以预先用 `close_diagonal_obstacles=True` 消除掉所有对角障碍物，没有对角障碍物，`diagonal_obstacles` 选项其实就没用了。     
+
+## 6. 踩到的一个坑
 
 
+## 7. 不足之处
 
-## 6. 总结
+很尴尬的是，JPS 算法在有大量随机障碍物的图中求解速度要慢于 A*。  
+
+* 虽然 JPS 扩展的结点数量比 A* 少了很多，但是 JPS 寻找跳点的开销其实也不可小觑...  
+
+(⌒‿⌒)つ：你可否知道一个叫 JPS+ 的优化版本？  
+
+∑(￣[]￣;)：咱这回还是暂时先不折腾了吧，以后再说啦~   
+
+## 8. 总结
 
 本来这只是个简单的算法课程大作业的，但是当我绞劲脑汁把 JPS 算法复现出来后，这个事情的性质就变了，（✧∀✧）🔥 我折腾魂又燃起来了 ！  
 

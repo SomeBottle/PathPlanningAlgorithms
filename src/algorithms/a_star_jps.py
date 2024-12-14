@@ -1,7 +1,17 @@
 """
 A* 算法 JPS 优化（带堆优化）
 
-* 如果考虑对角障碍，本算法不能绕过对角障碍，可能会卡住。
+* 如果考虑对角障碍，本搜索过程中遇到这种障碍物会停止当前方向的搜索：  
+
+    ■      
+    ↗ ■   
+
+* 遇到这两种对角障碍物，搜索仍然会继续执行，只不过在现实中这样可能会撞上障碍物：  
+
+                ■
+     ↗ ■       ↗
+
+* a_star_jps_detour_fixed 的实现针对上面这两个可能会撞上障碍物的情况会进行绕路。
 
     - SomeBottle 20241210
 """
@@ -145,6 +155,7 @@ class AStarJPSAlgorithm(AlgorithmBase):
         ↗ ■   ↗ ■   ↗
 
         * 只有对角方向移动时会遇到对角障碍物。
+        * 本算法实现下，只有第一种情况下会停止这个方向的搜索。
 
         （如果 diagonal_obstacles=False 会直接返回 False）
 
@@ -156,9 +167,10 @@ class AStarJPSAlgorithm(AlgorithmBase):
         if not self._diagonal_obstacles or not Direction.is_diagonal(direction):
             return False
         # 如果对角上有障碍物，就不能在这个方向走了
-        return self._problem.is_obstacle(
+        # 这里用 is_blocked，越界的地方也要算进去
+        return self._problem.is_blocked(
             curr_pos[0] + direction[0], curr_pos[1]
-        ) or self._problem.is_obstacle(curr_pos[0], curr_pos[1] + direction[1])
+        ) and self._problem.is_blocked(curr_pos[0], curr_pos[1] + direction[1])
 
     def _get_forced_neighbors(
         self, coordinate: tuple[int, int], direction: tuple[int, int]
@@ -265,11 +277,7 @@ class AStarJPSAlgorithm(AlgorithmBase):
 
         # 按照这个方向向前走
         while True:
-            if (
-                not self._problem.in_bounds(i, j)
-                or self._problem.is_obstacle(i, j)
-                or self._has_diagonal_obstacle(curr_node.pos, neighbor_direction)
-            ):
+            if not self._problem.in_bounds(i, j) or self._problem.is_obstacle(i, j):
                 # 1. 走到边界外或者迎头撞上障碍物了
                 return None
             # 行进过程中的临时结点
@@ -279,9 +287,16 @@ class AStarJPSAlgorithm(AlgorithmBase):
                 pos=(i, j),
                 dist_to_end=self._problem.dist_to_end(i, j),
             )
+
             # 2. 如果正好遇到了最终结点，直接返回这个结点作为跳点
+            # 注意这个要放在对角障碍物判断的前面，否则终点在角落里时 _has_diagonal_obstacle=True，本方法会返回，导致终点被忽略。
             if (i, j) == self._problem.end:
                 return tmp_node
+
+            if self._has_diagonal_obstacle(curr_node.pos, neighbor_direction):
+                # 1. 如果对角障碍物堵塞了，也没法继续前行了
+                return None
+
             # 3. 如果是对角线方向，先要向两个分量方向寻找跳点
             if diagonal:
                 if (
