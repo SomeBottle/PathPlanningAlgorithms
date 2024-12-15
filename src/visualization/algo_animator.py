@@ -22,7 +22,7 @@ class AlgorithmAnimator:
         self._algo = algo
         self._interval = interval
 
-    def _render(self, save_to_file: str | None = None,fps:int=12):
+    def _render(self, save_to_file: str | None = None, fps: int = 12):
         """
         渲染动画
 
@@ -77,11 +77,13 @@ class AlgorithmAnimator:
             # 展示动画
             plt.show()
 
+        return ani
+
     def show(self):
         """
         展示动画
         """
-        self._render()
+        return self._render()
 
     def save(self, file_path: str, fps: int = 12):
         """
@@ -90,4 +92,4 @@ class AlgorithmAnimator:
         :param file_path: 保存动画的文件路径
         :param fps: 渲染的视频的 FPS
         """
-        self._render(file_path,fps=fps)
+        return self._render(file_path, fps=fps)

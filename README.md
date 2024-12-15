@@ -6,6 +6,12 @@
 
 * PS：所有代码都有详细注释。
 
+<!--
+
+* 🤗 [点我在线尝试](https://mybinder.org/v2/git/https%3A%2F%2Fgithub.com%2FSomeBottle%2FPathPlanningAlgorithms/HEAD?labpath=examples%2Fa_star_and_jps_test.ipynb)  
+
+-->
+
 还别说，路径规划真挺有趣吧~ (。・∀・)ノ   
 
 ## 目录
@@ -318,7 +324,7 @@ A* 算法每一次迭代在取出一个落脚点后，都会**扩展其所有邻
 
 ## 7. 不足之处
 
-很尴尬的是，JPS 算法在有大量随机障碍物的图中求解速度要慢于 A*。  
+很尴尬的是，修正后的 JPS 算法在有大量随机障碍物的图中求解速度要慢于 A*。  
 
 * 虽然 JPS 扩展的结点数量比 A* 少了很多，但是 JPS 寻找跳点的开销其实也不可小觑...尤其是在障碍物比较复杂的图中。   
 

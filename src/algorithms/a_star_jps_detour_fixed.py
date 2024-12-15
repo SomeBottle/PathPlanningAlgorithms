@@ -9,7 +9,9 @@ A* 算法 JPS 优化（带堆优化），且支持绕过对角障碍，路径搜
 然后在生成路径的时候，把记录的绕路结点都加上即可。  
 -----
 
-除此之外本算法还修正了绕路后的搜索方向，保证能和 A* 算法得到一致的路径代价。
+除此之外本算法还修正了绕路后的搜索方向，保证能和 A* 算法得到一致的路径代价：
+
+3. 把绕路结点**临时加入**开放列表，并指定其移动方向，以让算法考虑可能的新关键路径。
 
     - SomeBottle 20241213
 """
@@ -120,7 +122,7 @@ class AStarJPSDetourAlgorithmFixed(AlgorithmBase):
         添加绕路结点，主要做以下两件事：
 
         1. 存储绕路结点坐标，标记从 pos_1 坐标到 pos_2 坐标需要经过一个绕路结点 bypass
-        2. 把绕路结点加入到开放列表中，指定搜索方向为 pos_1 -> pos_2 的方向，修正算法的搜索策略
+        2. 把绕路结点**临时**加入到开放列表中，指定搜索方向为 pos_1 -> pos_2 的方向，以修正算法的搜索策略
 
         :param bypass_pos: 绕路结点坐标
         :param pos_1: 前一个坐标
@@ -173,8 +175,6 @@ class AStarJPSDetourAlgorithmFixed(AlgorithmBase):
     def _add_as_open(self, node: AStarNode, bypass_node: bool = False):
         """
         将结点加入到开放列表中
-
-        （此方法会检查是否重复添加，如果重复添加，会保留最优的）
 
         :param node: 要加入的结点
         :param bypass_node: 这个结点是不是绕路结点，绕路结点只会临时加入堆中。
@@ -253,6 +253,10 @@ class AStarJPSDetourAlgorithmFixed(AlgorithmBase):
         else:
             # 没有堵塞
             return (False, None)
+
+        # 检查穿过对角障碍后是否越界，因为 is_blocked 对于越界的情况也会返回 True，如果穿过障碍物就越界了，就根本没必要绕路了，反正是死路一条
+        if not self._problem.in_bounds(*Direction.step(curr_pos, direction)):
+            bypass_pos = None
 
         return (True, bypass_pos)
 
@@ -362,11 +366,12 @@ class AStarJPSDetourAlgorithmFixed(AlgorithmBase):
         :param neighbor_direction: 搜索方向 (di, dj, 沿着 search_direction 走第一步的长度)
         :return: 跳点结点，没找到就是 None
         """
+        di_dj = search_direction[:2]
         # 先计算 neighbor_direction 指向的邻居坐标
-        i, j = Direction.step(curr_node.pos, search_direction[:2])
+        i, j = Direction.step(curr_node.pos, di_dj)
         di, dj, first_step_len = search_direction
         # 是否在按对角方向行进
-        diagonal = Direction.is_diagonal(search_direction[:2])
+        diagonal = Direction.is_diagonal(di_dj)
 
         # 除了第一步外每一步的长度
         step_len = math.sqrt(di**2 + dj**2)
@@ -386,16 +391,13 @@ class AStarJPSDetourAlgorithmFixed(AlgorithmBase):
                 dist_to_end=self._problem.dist_to_end(i, j),
             )
             diagonal_ob, bypass_coord = self._get_diagonal_obstacles(
-                tmp_node.pos, search_direction[:2]
+                tmp_node.pos, di_dj
             )
+
             # 2. 如果正好遇到了最终结点，直接返回这个结点作为跳点
             # 注意这个要放在对角障碍物判断的前面，否则终点在角落里时 diagonal_ob=True，本方法会返回，导致终点被忽略。
             if (i, j) == self._problem.end:
                 return tmp_node
-
-            if diagonal_ob and bypass_coord is None:
-                # 1. 如果对角障碍物堵塞了，也没法继续前行了
-                return None
 
             # 3. 如果是对角线方向，先要向两个分量方向寻找跳点
             if diagonal:
@@ -405,11 +407,17 @@ class AStarJPSDetourAlgorithmFixed(AlgorithmBase):
                 ):
                     # 如果找到了跳点，当前结点就是间接跳点
                     return tmp_node
+
             # 4. 判断当前结点是否有强制邻居需要考虑
-            if len(self._get_forced_neighbors((i, j), search_direction[:2])) > 0:
+            if len(self._get_forced_neighbors((i, j), di_dj)) > 0:
                 # 当前结点是直接跳点
                 return tmp_node
-            # 5. 上面条件都没满足，继续按照这个方向走
+
+            # 5. 如果被对角障碍物堵塞了，没法继续前行了
+            if diagonal_ob and bypass_coord is None:
+                return None
+
+            # 6. 上面条件都没满足，继续按照这个方向走
             # 论文中这里写成递归了，实际上没必要。
 
             i += di
