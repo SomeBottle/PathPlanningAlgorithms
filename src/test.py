@@ -36,14 +36,14 @@ def show_animation(ani: AlgorithmAnimator):
     """
     try:
         get_ipython()
-        from IPython.display import Video
+        from IPython.display import Video, display
 
         video_name = f"temp_output_{int(time.time())}.mp4"
         print(
             "IPython environment detected, rendering video... It will be showed later."
         )
         ani.save(video_name, fps=12)
-        Video(video_name, embed=True)
+        display(Video(video_name, embed=True))
 
     except NameError as e:
         # 不在 IPython 环境下
@@ -214,5 +214,4 @@ def test_visualize_result():
 
 
 if __name__ == "__main__":
-    test_animate_jps_detour_fixed()
     pass

@@ -4,13 +4,8 @@
 
 主要是探寻 A* 路径规划算法，咱附带实现了一下 JPS 版本的 A* 算法，支持对角障碍物的阻塞和绕路处理。
 
-* PS：所有代码都有详细注释。
-
-<!--
-
-* 🤗 [点我在线尝试](https://mybinder.org/v2/git/https%3A%2F%2Fgithub.com%2FSomeBottle%2FPathPlanningAlgorithms/HEAD?labpath=examples%2Fa_star_and_jps_test.ipynb)  
-
--->
+* PS：所有代码都有详细注释。  
+* 🤗 点击在线尝试 → [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/SomeBottle/PathPlanningAlgorithms/HEAD?labpath=examples%2Fa_star_and_jps_test.ipynb)  
 
 还别说，路径规划真挺有趣吧~ (。・∀・)ノ   
 
@@ -43,7 +38,7 @@ https://github.com/user-attachments/assets/3d610e65-9467-4bdb-8d27-76819883da8b
 
 带对角障碍物绕路机制的 Jump Point Search 算法：  
 
-https://github.com/user-attachments/assets/2fa6bd97-676a-42d3-b8dd-9a82d7968845
+https://github.com/user-attachments/assets/b691e9dd-4baa-4c1b-817c-60c7918ce0bc
 
 
 
@@ -232,16 +227,16 @@ A* 算法每一次迭代在取出一个落脚点后，都会**扩展其所有邻
 
 ![jps_diagonal_obstacle_case_2_solution](./pics/jps_diagonal_obstacle_case_2_solution.png)  
 
-实现的时候我**并没有改变 JPS 的搜索策略**，JPS 算法仍然继续沿着红色箭头这个方向搜索跳点，实际上我只是**暂时记录了**红色框代表的绕路结点（[`_add_bypass_pos`](./src/algorithms/a_star_jps_detour.py#L106)）并**修正了到达右上角的路径长度**（[L297](./src/algorithms/a_star_jps_detour.py#L297), [L374](./src/algorithms/a_star_jps_detour.py#L374)）罢了。   
+实现的时候我**并没有改变 JPS 的搜索策略**，JPS 算法仍然继续沿着红色箭头这个方向搜索跳点，实际上我只是**暂时记录了**红色框代表的绕路结点（[`_add_bypass_pos`](./src/algorithms/a_star_jps_detour.py#L106)）并**修正了到达右上角的路径长度**（[L301](./src/algorithms/a_star_jps_detour.py#L301), [L381](./src/algorithms/a_star_jps_detour.py#L381)）罢了。   
 
 * 注意，路径长度必须立即修正，不然可能影响到算法的搜索过程。
 
 🤔 **会遇到绕路情况的操作有两种**：  
 
-1. 从 `open_list` 取出一个结点后确定搜索方向时（[`_find_directions`](./src/algorithms/a_star_jps_detour.py#L249)）。  
-2. 沿着搜索方向查找跳点时（[`_jump`](./src/algorithms/a_star_jps_detour.py#L309)）。  
+1. 从 `open_list` 取出一个结点后确定搜索方向时（[`_find_directions`](./src/algorithms/a_star_jps_detour.py#L253)）。  
+2. 沿着搜索方向查找跳点时（[`_jump`](./src/algorithms/a_star_jps_detour.py#L313)）。  
 
-在算法求解完成后，**生成路径的时候，再把所有在录的绕路结点都加进去**（[`solved_path_coordinates`](./src/algorithms/a_star_jps_detour.py#L485)）。  
+在算法求解完成后，**生成路径的时候，再把所有在录的绕路结点都加进去**（[`solved_path_coordinates`](./src/algorithms/a_star_jps_detour.py#L492)）。  
 
 
 💡 这部分的实现位于 `a_star_jps_detour.py` 中。
@@ -261,7 +256,7 @@ A* 算法每一次迭代在取出一个落脚点后，都会**扩展其所有邻
 
 🤔 从图中我发现，因为发生了绕路，算法原本的搜索策略没法保证找到最优路径。**应当在绕路结点这里额外进行一些搜索**，比如图中在 `#DETOUR_2` 这里需要沿着蓝色斜箭头（平行于原本的搜索方向，黄色斜箭头）这个方向进行搜索。  
 
-💡 因此，需要**把绕路结点也加入** `open_list`，并**强制其方向平行于原本的搜索方向**（[L302](./src/algorithms/a_star_jps_detour_fixed.py#L302)），以检查可能被忽略的关键结点。   
+💡 因此，需要**把绕路结点也加入** `open_list`，并**强制其方向平行于原本的搜索方向**（[L306](./src/algorithms/a_star_jps_detour_fixed.py#L306)），以检查可能被忽略的关键结点。   
 
 * 这里“加入 `open_list`”只是临时加入，详见[第 6 节](#6-踩到的一个坑)。  
 
@@ -345,4 +340,5 @@ A* 算法每一次迭代在取出一个落脚点后，都会**扩展其所有邻
 * Duchoň F, Babinec A, Kajan M, et al. Path planning with modified a star algorithm for a mobile robot[J]. Procedia engineering, 2014, 96: 59-69.  
 * Harabor D. Fast pathfinding via symmetry breaking[J]. Aigamedev Com, 2012.
 * https://zerowidth.com/2013/a-visual-explanation-of-jump-point-search/  
-* https://hakuya.me/algorithm/findpath/JPS%E7%AE%97%E6%B3%95%E5%88%86%E4%BA%AB/
+* https://hakuya.me/algorithm/findpath/JPS%E7%AE%97%E6%B3%95%E5%88%86%E4%BA%AB/  
+
